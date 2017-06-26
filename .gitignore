@@ -1,0 +1,7 @@
+nbproject/
+/build
+/bin
+/doc
+.directory
+gmon.out
+callgrind.out*
