@@ -18,8 +18,7 @@ namespace sp { namespace algo { namespace gen { namespace parser {
  * \brief Generic parsing context
  */
 struct context {
-
-    //T val;
+    
 };
 
 template<size_t Value>
