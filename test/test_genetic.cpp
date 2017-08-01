@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(   int_simple_meiosis_binary_string_bit_count_test ,
 
 BOOST_AUTO_TEST_CASE( chromosome_bit_to_integral_reader_reads_signs_correctly_with_regard_to_type) {
 
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{1,0,0,0,0,0,0,1,1};
     reader_type cbtir(&ch);
 

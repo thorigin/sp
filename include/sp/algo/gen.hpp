@@ -2057,10 +2057,10 @@ struct bit_reader {
  *
  * \todo consider edge cases
  */
-struct chromosome_bit_to_integral_reader
-    : bit_reader<chromosome_bit_to_integral_reader> {
+struct chromosome_bit_reader
+    : bit_reader<chromosome_bit_reader> {
 
-    chromosome_bit_to_integral_reader(const chromosome* const ch)
+    chromosome_bit_reader(const chromosome* const ch)
         : chrom(ch), idx(), size(ch->size()) {}
 
     template<size_t Bits>

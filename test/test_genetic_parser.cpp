@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE( parser_detail_sequence_collect_types_produces_flat_structu
 
 BOOST_AUTO_TEST_CASE( parser_seq_parser_detail_sequence_attribute_strategy_size_3) {
     
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{};
     reader_type reader(&ch);
     
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE( parser_seq_parser_detail_sequence_attribute_strategy_size_
 
 BOOST_AUTO_TEST_CASE( parser_sequence_flatten_into_tuple_of_2) {
     
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{};
     reader_type reader(&ch);    
     
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE( parser_sequence_flatten_into_tuple_of_2) {
 BOOST_AUTO_TEST_CASE( parse_seq_with_two_literals ) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,0,1,1, 0,0,0,0};
     
     reader_type reader(&ch);
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE( parse_seq_with_two_literals ) {
 BOOST_AUTO_TEST_CASE( parse_action_return_false_fails_valid_expression ) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,0,1,1,0,0,0,0};
     
     reader_type reader(&ch);
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE( parse_action_return_false_fails_valid_expression ) {
 BOOST_AUTO_TEST_CASE( parse_literal_with_action_is_called ) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,0,1,1,0,0,0,0};
     
     reader_type reader(&ch);
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE( parse_literal_with_action_is_called ) {
 BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_vector ) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,0,1,1,0,0,0,0};
     
     reader_type reader(&ch);
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_vector ) {
 BOOST_AUTO_TEST_CASE( parser_seq_attribute_not_added_on_failure) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,0,1,1, 0,0,0,0, 0,0,0,1};
     
     reader_type reader(&ch);
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE( parser_seq_attribute_not_added_on_failure) {
 BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_binary_tuple) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,0,1,1, 1,0,1,0};
     
     reader_type reader(&ch);
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_binary_tuple) {
 BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_tuple_of_three) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,0,1,1, 1,0,1,0, 0,1,0,1};
     
     reader_type reader(&ch);
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_tuple_of_three) {
 BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_tuple_of_four) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,0,1,1, 1,0,1,0, 0,0,1,0,  0,0,0,1};
     
     reader_type reader(&ch);
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_tuple_of_four) {
 BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_vector_of_three) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,0,1,1, 1,0,1,0, 0, 1, 0, 1};
     
     reader_type reader(&ch);
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE( parser_seq_adapts_to_vector_of_three) {
 
 BOOST_AUTO_TEST_CASE( parser_alt_adapts_to_variant_of_four) {   
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,0,0,0,0,0,0,1};
     
     reader_type reader(&ch);
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE( parser_alt_adapts_to_variant_of_four) {
 BOOST_AUTO_TEST_CASE( parser_kleene_adapts_to_vector) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{1,0,1,0,1,0,1,0};
     
     reader_type reader(&ch);
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE( parser_kleene_adapts_to_vector) {
 BOOST_AUTO_TEST_CASE( parser_not) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{1,0};
     
     reader_type reader(&ch);
@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE( parser_not) {
 BOOST_AUTO_TEST_CASE( parser_plus_and_adapts_to_vector) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{1,0, 1,0, 1,1};
     
     reader_type reader(&ch);
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE( parser_plus_and_adapts_to_vector) {
 BOOST_AUTO_TEST_CASE( parser_optional_adapts_to_std_optional_tuple) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{1,0, 1,1};
     
     reader_type reader(&ch);
@@ -337,7 +337,7 @@ BOOST_AUTO_TEST_CASE( parser_optional_adapts_to_std_optional_tuple) {
 BOOST_AUTO_TEST_CASE( parser_composite_tuple_of_sequences_and_alternatives_is_adapted_into_variant) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,1,1};
     
     reader_type reader(&ch);
@@ -360,7 +360,7 @@ BOOST_AUTO_TEST_CASE( parser_composite_tuple_of_sequences_and_alternatives_is_ad
 BOOST_AUTO_TEST_CASE( parser_composite_tuple_of_multiple_sequences_and_alternatives_is_adapted_into_kleene_variant) {
    
     using namespace parser;
-    using reader_type = chromosome_bit_to_integral_reader;
+    using reader_type = chromosome_bit_reader;
     chromosome ch{0,1,1,1, 1,1,1,0};
     
     reader_type reader(&ch);
@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE( parser_composite_tuple_of_multiple_sequences_and_alternati
 BOOST_AUTO_TEST_CASE( parser_composite_tuple_of_sequences_and_alternatives_is_adapted_into_variant_with_explict_rules) {
    
     using namespace parser;
-    using r_t = chromosome_bit_to_integral_reader;
+    using r_t = chromosome_bit_reader;
     chromosome ch{0,1,1,1};
 
     r_t reader(&ch);
