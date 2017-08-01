@@ -9,6 +9,20 @@
 #ifndef SP_ALGO_GEN_GE_PARSER_HPP
 #define	SP_ALGO_GEN_GE_PARSER_HPP
 
+namespace sp { namespace algo { namespace gen {
+
+/**
+ * \brief Provides for a recursive descendent parser to be used
+ * for genetic expressions
+ */
+namespace parser {
+
+/**
+ * \internal Implementation details
+ */
+namespace detail {
+}}}}}
+
 #include "parser/core.hpp"
 #include "parser/parsers.hpp"
 #include "parser/operators.hpp"

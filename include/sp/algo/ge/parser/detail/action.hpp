@@ -11,9 +11,7 @@
 
 #include <type_traits>
 
-/**
- * \internal Move and actions semantics for parsers
- */
+
 namespace sp { namespace algo { namespace gen { namespace parser { namespace detail {
 
 template<

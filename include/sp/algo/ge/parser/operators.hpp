@@ -13,10 +13,6 @@
 #include "detail/as_parsable.hpp"
 #include <boost/integer.hpp>
 
-/**
- * \brief Provides for a recursive descendent parser to be used
- * for genetic expressions
- */
 namespace sp { namespace algo { namespace gen { namespace parser {
 
 

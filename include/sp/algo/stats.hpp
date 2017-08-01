@@ -19,9 +19,6 @@
 #include <limits>
 #include <chrono>
 
-/**
- * Statistics
- */
 namespace sp { namespace algo {
 
 template<typename Fp_type = double>

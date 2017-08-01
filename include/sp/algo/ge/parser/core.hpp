@@ -12,10 +12,6 @@
 #include "detail/action.hpp"
 #include <type_traits>
 
-/**
- * \brief Provides for a recursive descendent parser to be used
- * for genetic expressions
- */
 namespace sp { namespace algo { namespace gen { namespace parser {
 
 /**
