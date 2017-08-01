@@ -21,11 +21,6 @@ struct context {
     
 };
 
-template<size_t Value>
-struct id {
-    constexpr static size_t value = Value;
-};
-
 /**
  * \brief Empty Attribute tag
  */
