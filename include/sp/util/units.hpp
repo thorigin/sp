@@ -13,7 +13,8 @@
 #include <string>
 #include <iomanip>
 
-namespace sp { namespace util { namespace units {
+SP_UTIL_NAMESPACE_BEGIN
+namespace units {
 
 template<typename T>
 constexpr inline T trillion(T value) {
@@ -87,6 +88,7 @@ inline std::string stringifyBytes(T bytes) {
     return buffer.str();
 }
 
-}}}
+}
+SP_UTIL_NAMESPACE_END
 
 #endif /* SP_UTIL_UNITS_HPP */

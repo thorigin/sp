@@ -13,11 +13,7 @@
 #include <utility>
 #include <algorithm>
 
-
-/**
- * \author Omar Thor <omarthoro@gmail.com>
- */
-namespace sp { namespace util {
+SP_UTIL_NAMESPACE_BEGIN
 
 /**
  * \brief type alias for size_t
@@ -102,7 +98,7 @@ auto query(
 #define sp_query_cmpr(left, right, expression) [](const auto* left, const auto* right) { return (expression); }
 
 
-}}
+SP_UTIL_NAMESPACE_END
 
 
 #endif /* SP_UTIL_QUERY_HPP */

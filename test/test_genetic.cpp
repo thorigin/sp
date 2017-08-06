@@ -9,7 +9,6 @@
 #include <iostream>
 #include "sp/algo/stats.hpp"
 #include "sp/algo/gen.hpp"
-#include "sp/algo/ge/parser.hpp"
 #include "sp/util/units.hpp"
 
 #include "sp/util/timing.hpp"
@@ -202,7 +201,7 @@ BOOST_AUTO_TEST_CASE( perc_population_control_should_return_percent_of_populatio
 
 BOOST_AUTO_TEST_CASE( binary_striping_recombination_op_with_striping_of_2_should_interleave_two_chromosomes) {
 
-    binary_striping_recombination_op<2> bsro;
+    striping_recombination_binary_op<2> bsro;
     zero_model m;
     auto pop = m.new_island()->new_pop();
     dna* d1 = new dna();
@@ -215,7 +214,7 @@ BOOST_AUTO_TEST_CASE( binary_striping_recombination_op_with_striping_of_2_should
     d2->add(ch2);
     pop->add(d1);
     pop->add(d2);
-    typename binary_striping_recombination_op<>::operand_type pair((*pop)[0], (*pop)[1]);
+    typename striping_recombination_binary_op<>::operand_type pair((*pop)[0], (*pop)[1]);
     dna* result = bsro(&m, nullptr, 0, pair);
 
     chromosome& p1 = *ch1,
@@ -305,8 +304,8 @@ BOOST_AUTO_TEST_CASE(   int_simple_meiosis_binary_string_bit_count_test ,
     std::cout << "DNAs processed per second: " << timer.per_second(p->evolutions()*p->size()) << "\n";
     std::cout << "Population evolved over " << p->evolutions() << " generations\n";
     std::cout << "Memory Usage: " << stringifyBytes(p->mem_size()) << std::endl;
-    std::cout << make_stats("Evaluation", *p, [](const dna* const d) { return d->eval(); });
-    std::cout << make_stats("Lifetime", *p, [](const dna* const d) { return d->lifetime(); });
+//    std::cout << make_stats("Evaluation", *p, [](const dna* const d) { return d->eval(); });
+//    std::cout << make_stats("Lifetime", *p, [](const dna* const d) { return d->lifetime(); });
 
 }
 

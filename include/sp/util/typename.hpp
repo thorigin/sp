@@ -13,11 +13,12 @@
 #include <string>
 #include <iomanip>
 #include <cstddef>
-
 #ifdef __GNUG__
 #include <cxxabi.h>
 #endif
-namespace sp { namespace util {
+#include "sp/config.hpp"
+
+SP_UTIL_NAMESPACE_BEGIN
 
 /**
  * \brief Helper function, attempts to demangles ABI name to human readable type name and
@@ -41,7 +42,6 @@ std::string type_name()
 #endif
 }
 
-
-}}
+SP_UTIL_NAMESPACE_END
 
 #endif /* SP_UTSP_UTIL_TYPENAME_HPPIL_UNITS_HPP */

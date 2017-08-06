@@ -10,9 +10,7 @@
 #include <utility>
 #include <string>
 
-namespace sp { namespace util {
-
-
+SP_UTIL_NAMESPACE_BEGIN
 
 // \internal Implementation details
 namespace details {
@@ -148,5 +146,4 @@ private:
 
 };
 
-
-}}
+SP_UTIL_NAMESPACE_END

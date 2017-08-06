@@ -18,8 +18,9 @@
 #include <numeric>
 #include <limits>
 #include <chrono>
+#include "sp/config.hpp"
 
-namespace sp { namespace algo {
+SP_ALGO_NAMESPACE_BEGIN
 
 template<typename Fp_type = double>
 struct stat_results;
@@ -37,12 +38,12 @@ struct stat_results {
     friend std::ostream& operator<<(std::ostream& os, const stat_results<Fp_type_>& res);
 
     stat_results(std::string&& title)
-        :   title(std::forward<std::string>(title)),
+        : title(std::forward<std::string>(title)),
             created(std::chrono::system_clock::now()),
             entries() {}
 
     stat_results(const std::string& title)
-        :   title(title),
+        : title(title),
             created(std::chrono::system_clock::now()),
             entries() {}
 
@@ -149,9 +150,7 @@ const stat_results<Fp_type> make_stats( std::string&& title,
     return r;
 }
 
-
-
-}}
+SP_ALGO_NAMESPACE_END
 
 #endif	/* SP_ALGO_STATS_HPP */
 

@@ -9,14 +9,17 @@
 #ifndef SP_UTIL_TUPLES_HPP
 #define	SP_UTIL_TUPLES_HPP
 
+#include "sp/config.hpp"
 #include <type_traits>
 #include <utility>
 #include <tuple>
 
 /**
- * \brief Tuple manipulation utilities
+ * \file tuples.hpp
+ *
+ * Tuple and Tuple type manipulation utilities
  */
-namespace sp { namespace util {
+SP_UTIL_NAMESPACE_BEGIN
 
 namespace detail {
 
@@ -223,7 +226,7 @@ struct tuple_view;
  */
 template<size_t From, size_t To, typename ... Ts>
 struct tuple_view<From, To, std::tuple<Ts...>>
-    :   tuple_slice_t<From, To, std::tuple<Ts...>> {
+    : tuple_slice_t<From, To, std::tuple<Ts...>> {
 
     constexpr static size_t from = From;
     constexpr static size_t to = To;
@@ -236,7 +239,7 @@ struct tuple_view<From, To, std::tuple<Ts...>>
     using result_type = tuple_slice_t<From, To, original_type>;
 
     tuple_view(original_type& t)
-        :   tuple_slice_t<From, To, original_type>(tuple_slice<From, To>(t)),
+        : tuple_slice_t<From, To, original_type>(tuple_slice<From, To>(t)),
             ref(t) {}
 
     std::tuple<Ts...>& ref;
@@ -334,6 +337,6 @@ struct tuple_view_original_size {
 template<typename TupleView>
 constexpr size_t tuple_view_size_v = tuple_view_size<TupleView>::value;
 
-}}
+SP_UTIL_NAMESPACE_END
 
 #endif /* SP_UTIL_TUPLES_HPP */

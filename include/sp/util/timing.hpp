@@ -11,8 +11,9 @@
 
 #include <iostream>
 #include <chrono>
+#include "sp/config.hpp"
 
-namespace sp { namespace util {
+SP_UTIL_NAMESPACE_BEGIN
 
 //Forward declared
 struct scoped_timer;
@@ -100,7 +101,6 @@ std::ostream& operator<<(std::ostream& os, const scoped_timer& timer) {
     return os;
 }
 
-}}
-
+SP_UTIL_NAMESPACE_END
 
 #endif /* SP_UTIL_TIMING_HPP */

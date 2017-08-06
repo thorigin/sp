@@ -13,12 +13,10 @@
 #include <memory>
 #include <limits>
 #include <set>
-
+#include "sp/config.hpp"
 #include <boost/random.hpp>
 
-
-namespace sp { namespace util {
-
+SP_UTIL_NAMESPACE_BEGIN
 
 /**
  * \brief Random utility
@@ -116,7 +114,7 @@ sp_hot std::array<result_type, N> n_unique(Rand_util_type& util, result_type fro
     return arr;
 }
 
-}}
+SP_UTIL_NAMESPACE_END
 
 
 #endif /* SP_UTIL_RAND_HPP */

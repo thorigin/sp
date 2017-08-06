@@ -12,12 +12,12 @@
 #include <cstddef>
 #include <cstdlib>
 #include <type_traits>
+#include "sp/config.hpp"
 #include "hints.hpp"
 #include <boost/align/aligned_alloc.hpp>
 
 
-
-namespace sp { namespace util {
+SP_UTIL_NAMESPACE_BEGIN
 
 
 /**
@@ -54,7 +54,7 @@ sp_hot void aligned_free(void* addr) {
     boost::alignment::aligned_free(addr);
 }
 
-}}
+SP_UTIL_NAMESPACE_END
 
 #endif /* SP_UTIL_ALLOC_HPP */
 

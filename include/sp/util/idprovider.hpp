@@ -14,7 +14,7 @@
 #include <random>
 #include <atomic>
 
-namespace sp { namespace util {
+SP_UTIL_NAMESPACE_BEGIN
 
 /**
  * \brief Helper class to provide thread safe unique integer based identity
@@ -39,7 +39,7 @@ private:
 };
 
 
-}}
+SP_UTIL_NAMESPACE_END
 
 #endif /* SP_UTIL_IDPROVIDER_HPP */
 
