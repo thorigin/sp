@@ -13,7 +13,7 @@
 
 SP_ALGO_GEN_NAMESPACE_BEGIN
 
-namespace math_ops {
+namespace math {
 
 template<typename T>
 using plus = std::plus<T>;
@@ -34,7 +34,7 @@ struct pow : std::binary_function<T, T, T> {
     }
 };
 
-template<typename T>
+template<typename T> 
 struct exp : std::unary_function<T, T> {
     T operator()(const T& x) const {
         return std::exp(x);
@@ -61,6 +61,8 @@ struct neg : std::unary_function<T, T> {
         return -x;
     }
 };
+
+}
 
 SP_ALGO_GEN_NAMESPACE_END
 
