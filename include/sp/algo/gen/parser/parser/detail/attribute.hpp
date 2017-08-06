@@ -337,10 +337,7 @@ template<typename Left, typename Right, typename Attribute>
 struct sequence_attribute_strategy<
     Left, Right, Attribute,
     std::enable_if_t<
-        std::is_same_v<Attribute, empty_attribute> &&
-        !traits::is_vector_v<Attribute> &&
-        !traits::is_tuple_v<Attribute> &&
-        !is_sequence_v<Left> && !is_sequence_v<Right>
+        std::is_same_v<Attribute, empty_attribute>
     >
 > {
 
@@ -362,8 +359,6 @@ template<typename Left, typename Right, typename Attribute>
 struct sequence_attribute_strategy<
     Left, Right, Attribute,
     std::enable_if_t<
-        !std::is_same_v<Attribute, empty_attribute> &&
-        !traits::is_vector_v<Attribute> &&
         traits::is_tuple_v<Attribute> &&
         is_sequence_v<Left> && is_sequence_v<Right>
     >
@@ -395,8 +390,6 @@ template<typename Left, typename Right, typename Attribute>
 struct sequence_attribute_strategy<
     Left,Right, Attribute,
     std::enable_if_t<
-        !std::is_same_v<Attribute, empty_attribute> &&
-        !traits::is_vector_v<Attribute> &&
         traits::is_tuple_v<Attribute> &&
         is_sequence_v<Left> && !is_sequence_v<Right>
     >
@@ -427,8 +420,6 @@ template<typename Left, typename Right, typename Attribute>
 struct sequence_attribute_strategy<
     Left,Right, Attribute,
     std::enable_if_t<
-        !std::is_same_v<Attribute, empty_attribute> &&
-        !traits::is_vector_v<Attribute> &&
         traits::is_tuple_v<Attribute> &&
         !is_sequence_v<Left> && is_sequence_v<Right>
     >
@@ -448,6 +439,7 @@ struct sequence_attribute_strategy<
     static void left_assign(attribute_type& attr, Source&& src) { assign(std::get<0>(attr), std::forward<Source>(src)); }
     template<typename Source>
     static void right_assign(attribute_type& attr, Source&& src) {}
+
 };
 
 /**
@@ -457,8 +449,6 @@ template<typename Left, typename Right, typename Attribute>
 struct sequence_attribute_strategy<
     Left,Right, Attribute,
     std::enable_if_t<
-        !std::is_same_v<Attribute, empty_attribute> &&
-        !traits::is_vector_v<Attribute> &&
         traits::is_tuple_v<Attribute> &&
         !is_sequence_v<Left> && !is_sequence_v<Right>
     >
@@ -471,7 +461,7 @@ struct sequence_attribute_strategy<
     static auto& right(attribute_type& attr) { return std::get<1>(attr); }
 
     template<typename Source>
-    static void left_assign(attribute_type& attr, Source&& src) { assign(std::get<0>(attr), std::forward<Source>(src)); }
+    static void left_assign(attribute_type& attr, Source&& src){ assign(std::get<0>(attr), std::forward<Source>(src)); }
 
     template<typename Source>
     static void right_assign(attribute_type& attr, Source&& src) { assign(std::get<1>(attr), std::forward<Source>(src)); }
@@ -484,9 +474,7 @@ template<typename Left, typename Right, typename Attribute>
 struct sequence_attribute_strategy<
     Left, Right, Attribute,
     std::enable_if_t<
-        !std::is_same_v<Attribute, empty_attribute> &&
-        traits::is_vector_v<Attribute> &&
-        !traits::is_tuple_v<Attribute>
+        traits::is_vector_v<Attribute>
     >
 > {
 

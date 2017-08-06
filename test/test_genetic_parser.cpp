@@ -439,3 +439,38 @@ BOOST_AUTO_TEST_CASE( parser_composite_tuple_of_sequences_and_alternatives_is_ad
 
     BOOST_REQUIRE_EQUAL(std::get<2>(var), 7);
 }
+
+BOOST_AUTO_TEST_CASE( parser_rule_attribute_conversion) {
+
+    using namespace parser;
+    using r_t = chromosome_bit_reader;
+    chromosome ch{1,1,1,1};
+
+    r_t reader(&ch);
+
+    struct result {
+        result() {}
+
+        result(std::tuple<bool, bool, bool, bool>&& t) {
+            values.push_back(std::get<0>(t));
+            values.push_back(std::get<1>(t));
+            values.push_back(std::get<2>(t));
+            values.push_back(std::get<3>(t));
+        }
+
+        std::vector<bool> values;
+    };
+
+    rule<r_t, result> expr;
+
+    expr    %= bool_val(true) >> bool_any() >> bool_any() >> bool_val(true);
+
+    result res;
+
+    BOOST_REQUIRE(expr.parse(reader, res));
+    BOOST_REQUIRE_EQUAL(res.values.size(), 4);
+    BOOST_REQUIRE_EQUAL(res.values[0], 1);
+    BOOST_REQUIRE_EQUAL(res.values[1], 1);
+    BOOST_REQUIRE_EQUAL(res.values[2], 1);
+    BOOST_REQUIRE_EQUAL(res.values[3], 1);
+}

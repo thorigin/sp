@@ -40,9 +40,9 @@ namespace detail {
         }
     };
 
-    template<typename T>
+    template<typename T, size_t Bits = integral_bit_count_v<T>>
     constexpr
-    std::enable_if_t<std::is_integral_v<T>, typename as_iterable_array<T>::type>
+    std::enable_if_t<std::is_integral_v<T>, typename as_iterable_array<T, Bits>::type>
     as_iterable(const T& value) {
         return as_iterable_array<T>::apply(value);
     }
@@ -68,7 +68,7 @@ struct abstract_binary_value_parser : value_parser<Derived> {
     using iterable_type = std::array<bool, Bits>;
 
     abstract_binary_value_parser(AttributeValue&& val)
-        : value(std::forward<AttributeValue>(val)), iterable_value(detail::as_iterable(value)) {}
+        : value(std::forward<AttributeValue>(val)), iterable_value(detail::as_iterable<attribute_type, Bits>(value)) {}
 
     abstract_binary_value_parser(AttributeValue&& val, iterable_type&& iterable)
         : value(std::forward<AttributeValue>(val)), iterable_value(std::forward<iterable_type>(iterable)) {}
@@ -195,16 +195,18 @@ struct integral_value_parser
 #define SP_GEN_PARSER_REG_BS_VAL_PARSER_FUNC(name) name ## _val
 #define SP_GEN_PARSER_REG_BS_VAL_PARSER_TYPE(name) name ## _value_parser
 #define SP_GEN_PARSER_REG_BS_VAL_PARSER(type, name)                             \
+    template<size_t Bits = detail::integral_bit_count_v<type>>                  \
     using SP_GEN_PARSER_REG_BS_VAL_PARSER_TYPE(name)                            \
-            = bit_string_value_parser<type>;                                    \
-    inline  SP_GEN_PARSER_REG_BS_VAL_PARSER_TYPE(name)                          \
+            = bit_string_value_parser<type, Bits>;                              \
+    template<size_t Bits = detail::integral_bit_count_v<type>>                  \
+    inline  SP_GEN_PARSER_REG_BS_VAL_PARSER_TYPE(name)<Bits>                    \
             SP_GEN_PARSER_REG_BS_VAL_PARSER_FUNC(name)(type&& val) {            \
         return { std::forward<type>(val) };                                     \
     }                                                                           \
     namespace detail {                                                          \
-        SP_GEN_PARSER_REG_BS_VAL_PARSER_TYPE(name)                              \
+        SP_GEN_PARSER_REG_BS_VAL_PARSER_TYPE(name)<>                            \
         as_parsable(type&& val) {                                               \
-            return SP_GEN_PARSER_REG_BS_VAL_PARSER_TYPE(name) {                 \
+            return SP_GEN_PARSER_REG_BS_VAL_PARSER_TYPE(name)<> {               \
                 std::forward<type>(val)                                         \
             };                                                                  \
         }                                                                       \
@@ -213,15 +215,15 @@ struct integral_value_parser
 #define SP_GEN_PARSER_REG_INT_PARSER_FUNC(name) name ## _any
 #define SP_GEN_PARSER_REG_INT_PARSER_TYPE(name) name ## _parser
 #define SP_GEN_PARSER_REG_INT_PARSER(type, name)                                \
-    template<size_t Bits = detail::integral_bit_count_v<type>>                    \
+    template<size_t Bits = detail::integral_bit_count_v<type>>                  \
     using SP_GEN_PARSER_REG_INT_PARSER_TYPE(name)                               \
-            = integral_value_parser<type, Bits>;                           \
-    inline  SP_GEN_PARSER_REG_INT_PARSER_TYPE(name)<>                            \
+            = integral_value_parser<type, Bits>;                                \
+    inline  SP_GEN_PARSER_REG_INT_PARSER_TYPE(name)<>                           \
             SP_GEN_PARSER_REG_INT_PARSER_FUNC(name)() {                         \
         return {};                                                              \
     }                                                                           \
-    template<size_t Bits = detail::integral_bit_count_v<type>>                     \
-    inline  SP_GEN_PARSER_REG_INT_PARSER_TYPE(name)<Bits>                  \
+    template<size_t Bits = detail::integral_bit_count_v<type>>                  \
+    inline  SP_GEN_PARSER_REG_INT_PARSER_TYPE(name)<Bits>                       \
             SP_GEN_PARSER_REG_INT_PARSER_FUNC(name)() {                         \
         return {};                                                              \
     }

@@ -28,7 +28,13 @@ struct alt_parser
     using right_type = Right;
     using left_attribute_type = typename left_type::attribute_type;
     using right_attribute_type = typename right_type::attribute_type;
-    using attribute_type = traits::tuple_to_variant_t<detail::collect_binary_parser_types_t<alt_parser<Left, Right>>>;
+    //using attribute_type = traits::tuple_to_variant_t<detail::collect_binary_parser_types_t<alt_parser<Left, Right>>>;
+    using attribute_type = traits::tuple_to_variant_t<
+        util::tuple_push_front_t<
+            detail::collect_binary_parser_types_t<alt_parser<Left, Right>>,
+            std::monostate
+        >
+    >;
 
     alt_parser(left_type&& lhs, right_type&& rhs)
         : left_parser(std::forward<left_type>(lhs)),

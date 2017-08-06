@@ -33,7 +33,14 @@ namespace detail {
 
         template<typename Reader, typename Context, typename Attribute>
         bool operator()(Reader& reader, Context& ctx, Attribute& attr) const {
-            if(parser.parse(reader, ctx, attr)) {
+            static_assert(
+                std::is_constructible_v<Attribute, attribute_type> ||
+                std::is_assignable_v<attribute_type, Attribute>,
+                "Rule attribute must be constructible from parser definition attribute"
+            );
+            attribute_type rattr;
+            if(parser.parse(reader, ctx, rattr)) {
+                detail::assign(attr, std::move(rattr));
                 return true;
             }
             return false;
@@ -57,6 +64,8 @@ struct rule : base_parser<rule<Reader, Attribute>> {
     using context_type = context;
     using definition_type = std::function<bool(reader_type&, context_type&, attribute_type&)>;
 
+    static_assert(std::is_default_constructible_v<Attribute>, "Attribute must be default constructible");
+
     rule() : name("no-name-rule"), def() {}
     rule(std::string rule_name) : name(rule_name), def() {}
 
@@ -65,7 +74,7 @@ struct rule : base_parser<rule<Reader, Attribute>> {
         if(def) {
             if(def(reader, ctx, attr)) {
                 return true;
-            }            
+            }
         }
         return false;
     }
@@ -74,7 +83,7 @@ struct rule : base_parser<rule<Reader, Attribute>> {
     void operator%=(Parser&& right) {
         def = detail::rule_capture<Parser>(std::forward<Parser>(right));
     }
-    
+
     std::string name;
     definition_type def;
 };
