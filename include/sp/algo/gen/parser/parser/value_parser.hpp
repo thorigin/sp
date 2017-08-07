@@ -44,7 +44,7 @@ namespace detail {
     constexpr
     std::enable_if_t<std::is_integral_v<T>, typename as_iterable_array<T, Bits>::type>
     as_iterable(const T& value) {
-        return as_iterable_array<T>::apply(value);
+        return as_iterable_array<T, Bits>::apply(value);
     }
 
     template<typename T, size_t N>
