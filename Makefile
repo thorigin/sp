@@ -16,7 +16,7 @@ TESTS := $(TEST_SRCS:%.cpp=$(BUILD_DIR)/%.bin)
 
 DEPS := $(TESTS:=.d)
 
-LDFLAGS := -pthread -lm
+LDFLAGS := -pthread -lm -lboost_system -lboost_filesystem
 TEST_LDFLAGS := $(LDFLAGS) -lboost_unit_test_framework
 
 INC_DIRS := include /usr/include/eigen3
