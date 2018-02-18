@@ -32,9 +32,12 @@ CCPTESTFLAGS := $(CPPFLAGS) $(TEST_LDFLAGS) $(CPPFLAGS) $(INC_TEST_FLAGS) -DBOOS
 
 MKDIR_P ?= mkdir -p
 
-.PHONY: clean all
+.PHONY: clean all resources
 
-all: $(OBJS) $(TESTS)
+all: resources $(OBJS) $(TESTS)
+
+resources:
+	bash -c ./resources/fetch.sh
 
 # c++ source
 $(BUILD_DIR)/src/%.cpp.o: src/%.cpp  $(HEADERS)
