@@ -5,3 +5,4 @@ nbproject/
 .directory
 gmon.out
 callgrind.out*
+/resources/mnist
