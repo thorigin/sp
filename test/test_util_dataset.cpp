@@ -34,5 +34,9 @@ BOOST_AUTO_TEST_CASE( mnist_data_reader_read_frame) {
     mnist_data_reader mdr("resources/mnist/train-images-idx3-ubyte",  "resources/mnist/train-labels-idx1-ubyte");
     
 
-    BOOST_REQUIRE_EQUAL(mdr.read_frame(), std::vector<uint8_t>{1, 2, 3, 4});
+    auto res = mdr.read_frame();
+    BOOST_REQUIRE_EQUAL(mdr.frame_size(), 1);
+    BOOST_REQUIRE_EQUAL(mdr.frame_height(), 28);
+    BOOST_REQUIRE_EQUAL(mdr.frame_width(), 28);
+    BOOST_REQUIRE_EQUAL(res.size(), mdr.frame_size());
 }
