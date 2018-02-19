@@ -10,7 +10,7 @@ These instructions are incomplete and represent a work in progress. TBD.
 
 Libraries required:
 
-* BOOST 1.63+ (libboost-dev)
+* BOOST 1.63+ (libboost-all-dev)
 * TBB 4.3+ (libtbb)
 * OpenMP 3.x+
 * GCC 7.1+
@@ -19,7 +19,7 @@ Libraries required:
 
 Installation in Debian based distros:
 
-apt-get update && apt-get upgrade && apt-get install build-essential libboost-dev libtbb-dev
+apt-get update && apt-get upgrade && apt-get install build-essential libboost-all-dev libtbb-dev
 
 ### Installing
 

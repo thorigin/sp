@@ -1,25 +1,27 @@
 /**
- * Copyright (C) Omar Thor <omarthoro@gmail.com> - All Rights Reserved
+ * Copyright (C) Omar Thor <omar@thorigin.com>, Jacob Escobedo <jacob@jmesco.com>, Aurora Hernandez <aurora@aurorahernandez.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  *
- * Written by Omar Thor <omarthoro@gmail.com>, 2017
+ * Written by Omar Thor <omarthoro@gmail.com>, 2018
+ *
  */
 
-#ifndef SP_UTIL_QUERY_HPP
-#define SP_UTIL_QUERY_HPP
+#ifndef SP_UTIL_DATASET_DATA_READER_HPP
+#define SP_UTIL_DATASET_DATA_READER_HPP
 
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include "sp/config.hpp"
 
 SP_UTIL_NAMESPACE_BEGIN
 
 struct data_reader {
-    
+
 };
 
 SP_UTIL_NAMESPACE_END
 
 
-#endif /* SP_UTIL_QUERY_HPP */
+#endif /* SP_UTIL_DATASET_DATA_READER_HPP */

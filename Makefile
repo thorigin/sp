@@ -19,8 +19,8 @@ TESTS := $(TEST_SRCS:%.cpp=$(BUILD_DIR)/%.bin)
 
 DEPS := $(OBJS:.o=.d) $(TESTS:=.d)
 
-LDFLAGS := -pthread -lm
-TEST_LDFLAGS := $(LDFLAGS) $(LDFLAGS) -lboost_unit_test_framework
+LDFLAGS := -pthread -lm -lboost_system -lboost_filesystem
+TEST_LDFLAGS := $(LDFLAGS) -lboost_unit_test_framework
 
 INC_DIRS := include
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
