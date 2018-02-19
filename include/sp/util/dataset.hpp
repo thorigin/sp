@@ -10,5 +10,6 @@
 #define	SP_UTIL_DATASET_HPP
 
 #include "dataset/data_reader.hpp"
+#include "dataset/mnist_data_reader.hpp"
 
 #endif /* SP_UTIL_DATASET_HPP */
