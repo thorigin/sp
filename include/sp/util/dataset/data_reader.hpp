@@ -1,10 +1,11 @@
 /**
- * Copyright (C) Omar Thor <omar@thorigin.com>, Jacob Escobedo <jacob@jmesco.com>, Aurora Hernandez <aurora@aurorahernandez.com - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
+ * Copyright (C). All Rights Reserved.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Proprietary and confidential.
  *
- * Written by Omar Thor <omarthoro@gmail.com>, 2018
- *
+ * Written by
+ * - Aurora Hernandez <aurora@aurorahernandez.com>, 2018
+ * - Jacob Escobedo <jacob@jmesco.com>, 2018
  */
 
 #ifndef SP_UTIL_DATASET_DATA_READER_HPP
@@ -17,6 +18,10 @@
 
 SP_UTIL_NAMESPACE_BEGIN
 
+/**
+ * @file Common data reader interface
+ * @todo unimplemented
+ */
 struct data_reader {
 
 };
