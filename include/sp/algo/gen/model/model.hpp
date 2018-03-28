@@ -234,9 +234,9 @@ struct model {
 
             pop_ctrl_strategy.evaluate(this, p, p->size()-prune_ct, p->size());
 
-//            if(p->evolutions() % 1000 == 0) {
-//                std::cout << sp::algo::make_stats("Evolutions", *p, [](const dna* const d) { return d->eval(); });
-//            }
+            if(p->evolutions() % 1000 == 0) {
+                std::cout << sp::algo::make_stats("Evolutions", *p, [](const dna* const d) { return d->eval(); });
+            }
 
             if(population_control_type::prune_before_multiplication) {
                 p->remove_from_bottom(prune_ct);
@@ -258,6 +258,9 @@ struct model {
             stop_ctx.set_valid_range(0, p->size()-prune_ct);
 
         } while(!predicate(stop_ctx));
+
+        //evaluate all
+        pop_ctrl_strategy.evaluate(this, p, 0, p->size());
     }
 
     size_t size() {

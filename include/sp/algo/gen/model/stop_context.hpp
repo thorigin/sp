@@ -10,6 +10,7 @@
 #define	SP_ALGO_GEN_STOP_CONTEXT_HPP
 
 #include "sp/config.hpp"
+#include <chrono>
 
 SP_ALGO_GEN_NAMESPACE_BEGIN
 
@@ -21,9 +22,23 @@ SP_ALGO_GEN_NAMESPACE_BEGIN
  */
 struct stop_context {
 
-    stop_context(const population* const pop) : p(pop) {}
+    using high_res_clock = std::chrono::high_resolution_clock;
+    using duration = high_res_clock::duration;
+
+    stop_context(const population* const pop) : p(pop), start(high_res_clock::now()) {}
 
     float highest_eval() const  {
+        float highest = -1;
+        size_t len = to;
+        for(size_t i = from; i < len; ++i) {
+            float current = (*p)[i]->eval();
+            if(current > highest)
+                highest = current;
+        }
+        return highest;
+    }
+
+    float highest_eval(size_t back) const  {
         float highest = -1;
         size_t len = to;
         for(size_t i = from; i < len; ++i) {
@@ -50,19 +65,26 @@ struct stop_context {
         return (total / (to-from));
     }
 
+
+    double elapsed() const {
+        return (high_res_clock::now() - start) / std::chrono::nanoseconds(1) / 1.0e9;
+    }
+
     /**
      * Sets the range of DNAs to consider for evaluation context
      *
      *
-     * @param from
-     * @param to
+     * \param from
+     * \param to
      */
     void set_valid_range(size_t from, size_t to) {
         this->from = from;
         this->to = to;
     }
+
 private:
     const population* const p;
+    high_res_clock::time_point start;
     size_t from, to;
 };
 

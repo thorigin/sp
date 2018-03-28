@@ -21,7 +21,7 @@ SP_ALGO_GEN_NAMESPACE_BEGIN
 struct chromosome {
 
     chromosome(const chromosome& other)
-        : storage(util::aligned_alloc<bool*>(other.length)),
+        : storage(util::aligned_alloc<bool>(other.length)),
             length(other.length) {
         std::copy(other.storage, other.storage + other.length, storage);
     }
@@ -33,13 +33,13 @@ struct chromosome {
     chromosome& operator=(chromosome&& right)= delete;
 
     chromosome(std::initializer_list<bool> init_list)
-        : storage(util::aligned_alloc<bool*>(init_list.size())),
+        : storage(util::aligned_alloc<bool>(init_list.size())),
             length(init_list.size()) {
         std::copy(init_list.begin(), init_list.end(), storage);
     }
 
     chromosome(const size_t& size)
-        : storage(util::aligned_alloc<bool*>(size)),
+        : storage(util::aligned_alloc<bool>(size)),
             length(size) {}
 
     virtual ~chromosome() {

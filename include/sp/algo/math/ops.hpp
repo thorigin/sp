@@ -11,9 +11,7 @@
 
 #include "sp/config.hpp"
 
-SP_ALGO_GEN_NAMESPACE_BEGIN
-
-namespace math {
+SP_ALGO_MATH_NAMESPACE_BEGIN
 
 template<typename T>
 using plus = std::plus<T>;
@@ -64,7 +62,7 @@ struct neg : std::unary_function<T, T> {
 
 }
 
-SP_ALGO_GEN_NAMESPACE_END
+SP_ALGO_MATH_NAMESPACE_END
 
 #endif	/* SP_ALGO_MATH_OPS_HPP */
 
