@@ -100,7 +100,7 @@ const stat_results<Fp_type> make_stats( std::string&& title,
                 return total + (val_i - mean) * (val_i - mean);
             }
         )
-        / dist
+        / (dist - 1)
     );
 
     fp_type mode_result = std::numeric_limits<fp_type>::quiet_NaN();

@@ -21,7 +21,7 @@ SP_UTIL_NAMESPACE_BEGIN
 using limit = size_t;
 
 /**
- * @breif Query a range by the given critiera expression and sorting order
+ * \brief Query a range by the given critiera expression and sorting order
  *
  *
  * \todo improve efficiency and memory usage
@@ -46,7 +46,7 @@ auto query(
     );
 }
 /**
- * @breif Query a range by the given critiera expression and sorting order
+ * \brief Query a range by the given critiera expression and sorting order
  *
  *
  * \todo improve efficiency and memory usage, multi key sorting

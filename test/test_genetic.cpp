@@ -7,6 +7,12 @@
  */
 
 #include <iostream>
+#include <tuple>
+#include <unordered_set>
+#include <cstdlib>
+#include <thread>
+#include <cmath>
+
 #include "sp/algo/stats.hpp"
 #include "sp/algo/gen.hpp"
 #include "sp/util/units.hpp"
@@ -235,7 +241,7 @@ BOOST_AUTO_TEST_CASE( binary_striping_recombination_op_with_striping_of_2_should
     BOOST_REQUIRE(ch[1] == p1[1] || ch[1] == p2[1]);
     BOOST_REQUIRE(ch[2] == p2[2] || ch[2] == p1[2]);
     BOOST_REQUIRE(ch[0] == p2[3] || ch[3] == p1[3]);
-    
+
 }
 
 BOOST_FIXTURE_TEST_CASE(    fitness_propotionate_selection_op_selection_frequency_matches_evaluation,
@@ -269,7 +275,7 @@ BOOST_AUTO_TEST_CASE( simple_meiosis_model_evolve_replaces_at_least_one ) {
 
 }
 
-BOOST_AUTO_TEST_CASE(   int_simple_meiosis_binary_string_bit_count_test , 
+BOOST_AUTO_TEST_CASE(   int_simple_meiosis_binary_string_bit_count_test ,
                         *boost::unit_test::disabled() *boost::unit_test::label("integration")) {
 
     //Adds up the number of bits (ratio)
@@ -332,4 +338,229 @@ BOOST_AUTO_TEST_CASE( chromosome_bit_to_integral_reader_reads_signs_correctly_wi
     BOOST_REQUIRE_EQUAL(((int)cbtir.peek<N, tp>()), -128);
     BOOST_REQUIRE_EQUAL(((int)cbtir.next<N, tp>()), -128);
     BOOST_REQUIRE((!cbtir.has_next<N>()));
+}
+
+using xy_tuple = std::tuple<int,int>;
+struct xy_tuple_hash : public std::unary_function<xy_tuple, std::size_t> {
+    std::size_t operator()(const xy_tuple& k) const {
+        return std::get<0>(k) ^ std::get<1>(k);
+    }
+};
+using xy_set = std::unordered_set<xy_tuple, xy_tuple_hash>;
+
+int board[20][20] = {0};
+int total_coins = 0;
+
+BOOST_AUTO_TEST_CASE(   int_test_coin_picking_strategy_direction_method ,
+                        *boost::unit_test::disabled() *boost::unit_test::label("integration")) {
+
+    sp::util::rand_util rand;
+
+    int max = 13;
+
+    for(int i = 0; i < 20; ++i) {
+        for(int j = 0; j < 20; ++j) {
+            if(rand.rand_float() < 0.05 ? 1 : 0) {
+                ++total_coins;
+                board[i][j] = 1;
+                --max;
+                if(max == 0)
+                    goto outerEnd;
+            }
+        }
+    }
+    outerEnd:
+
+    enum direction { up, right, down, left };
+
+
+    //Adds up the number of bits (ratio)
+    struct coin_search_evaluator {
+
+
+        bool try_move(int& orig_x, int& orig_y, int mov_x, int mov_y, xy_set& visited) const {
+            if(mov_x >= 0 && mov_x < 20 && mov_y >= 0 && mov_y < 20 && visited.find({mov_x, mov_y}) == visited.end()) {
+                orig_x = mov_x;
+                orig_y = mov_y;
+                visited.insert({mov_x, mov_y});
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        bool try_step(int& orig_x, int& orig_y, int mov_x, int mov_y, xy_set& found, xy_set& visited) const {
+            if(try_move(orig_x, orig_y, mov_x, mov_y, visited)) {
+                if(board[mov_y][mov_x] > 0) {
+                    //attempt to insert into set, only counted once
+                    found.insert({mov_x, mov_y});
+                }
+                return true;
+            }
+            return false;
+        }
+
+        float operator()(const dna* const d) const {
+            //std::cout << "Testing: " << d << ": ";
+            int moves_attempted = 0;
+            xy_set found;
+            xy_set visited;
+            chromosome_bit_reader r((*d)[0]);
+            //int x = 0, y = 0; //always start in the top left corner
+            int x = r.next<4, int>() % 20, y = r.next<4, int>() % 20; //Starting point genetic
+            visited.insert({x, y});
+            while(r.has_next_partial()) {
+                //don't attempt anymore instructions after all coins are found
+                if(found.size() >= static_cast<unsigned>(total_coins)) {
+                    break;
+                }
+                int val = r.next<2, int>();
+                int times = 1; //
+                switch(val) {
+                    case 0: // go_up
+                        try_step(x, y, x, y+times, found, visited);
+                        break;
+                    case 1: // go right
+                        try_step(x, y, x+times, y, found, visited);
+                        break;
+                    case 2: // go down
+                        try_step(x, y, x, y-times, found, visited);
+                        break;
+                    case 3: // go left
+                        try_step(x, y, x-times, y, found, visited);
+                        break;
+                    default:
+                        throw "Invalid instruction";
+                }
+                ++moves_attempted; //count all moves
+            }
+
+            //Weighted average of found coins + moves over total coins and min moves so far            
+            float coin_score =  std::min(d->lifetime()*1.0f + (float)found.size(), (float)total_coins - 2.0f) / (float)total_coins;
+            return coin_score;
+        }
+
+        void print_trace(const dna* const d) const {
+            std::cout << "Tracing: " << d << "\n";
+            int strategy_path[20][20] = {1, 0};
+            int moves_attempted = 0;
+            xy_set found;
+            xy_set visited;
+            chromosome_bit_reader r((*d)[0]);
+            //int x = 0, y = 0;
+            int x = r.next<4, int>() % 20, y = r.next<4, int>() % 20; //Starting point genetic
+            visited.insert({x, y});
+            while(r.has_next_partial()) {
+                //don't attempt anymore instructions after all coins are found
+                if(found.size() >= static_cast<unsigned>(total_coins)) {
+                    break;
+                }
+                //Read the next instruction
+                //can only move one slot at a time
+                int val = r.next<2, int>();
+                int times = 1; //r.next<2, int>();
+                switch(val) {
+                    case 0: // go_up
+                        try_step(x, y, x, y+times, found, visited);
+                        break;
+                    case 1: // go right
+                        try_step(x, y, x+times, y, found, visited);
+                        break;
+                    case 2: // go down
+                        try_step(x, y, x, y-times, found, visited);
+                        break;
+                    case 3: // go left
+                        try_step(x, y, x-times, y, found, visited);
+                        break;
+                    default:
+                        throw "Invalid instruction";
+                }
+                strategy_path[y][x] = 1;
+                ++moves_attempted; //count all moves
+                std::system("clear"); //hackish
+                std::cout << "I#ID: " << d << " (Moves: " << moves_attempted << ")\n";
+                for(int i = 0; i < 20; ++i) {
+                    for(int j = 0; j < 20; ++j) {
+                        if(board[i][j] > 0) {
+                            if(strategy_path[i][j] > 0) {
+                                std::cout << "[X]";
+                            } else {
+                                std::cout << "[C]";
+                            }
+                        } else if(strategy_path[i][j] > 0) {
+                            std::cout << "[M]";
+                        } else {
+                            std::cout << "[ ]";
+                        }
+                    }
+                    std::cout << "\n";
+                }
+                std::cout << "Coins: " << found.size() << " of " << total_coins << "\n";
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            }
+            //float coin_score =  (float)found.size() / (float)total_coins;
+            float coin_score =  std::min(d->lifetime()*1.0f + (float)found.size(), (float)total_coins - 2.0f) / (float)total_coins;
+//            float move_score =  std::max(0.0f, std::min(1.0f, (float)max_moves / (float)moves_attempted));
+            float score =  coin_score; // * 0.3f + move_score * 0.7f;
+            std::cout << "Score: " << score << "(" << found.size() << "/" << total_coins << ")\n";
+        }
+    };
+
+    std::cout << "There are a total of " << total_coins << " coins on the board (20x20)\n";
+
+    model<
+        multiplication_pipeline_strategy<
+            fitness_proportionate_binary_selection_op,
+            n_point_recombination_binary_op<1>,
+            stochastic_mutation_unary_op<
+                uniform_mutation_rate<3, 100>
+            >
+        >,
+        ratio_population_control<
+            std::ratio<0>,
+            std::ratio<15,100>,
+            coin_search_evaluator
+        >,
+        zero_migration_model
+    > m;
+
+    auto p = m.new_island()->new_pop();
+
+    //32 individuals with n instructions (2 bit each) max
+    m.seed(1024, {4*2 + 64 * 2}, p);
+
+    scoped_timer timer("Runtime", false);
+
+    std::cout << "Memory Usage: " << stringifyBytes(p->mem_size()) << std::endl;
+
+    m.evolve(p,
+        sp_evolve_until(ctx.elapsed() >= 60*5 || ctx.highest_eval() >= 0.95f)
+    );
+
+    std::cout << timer;
+
+    std::cout << "The board\nCoins on board:" << total_coins << "\n";
+
+    for(int i = 0; i < 20; ++i) {
+        for(int j = 0; j < 20; ++j) {
+            if(board[i][j] == 1) {
+                std::cout << "[C]";
+            } else {
+                std::cout << "[ ]";
+            }
+        }
+        std::cout << "\n";
+    }
+    std::cout << "Press any character to watch replay of top candidate\n";
+    std::cin.get();
+    coin_search_evaluator().print_trace((*p)[0]);
+    std::cout << "Score: " << (*p)[0]->eval() << "\n";
+
+//    std::cout << "Top candidate: \n" ;
+//    coin_search_evaluator().print_trace((*p)[0]);
+    std::cout << "\n\n";
+    std::cout << "DNAs processed per second: " << timer.per_second(p->evolutions()*p->size()) << "\n";
+    std::cout << "Population evolved over " << p->evolutions() << " generations\n";
+    std::cout << "Memory Usage: " << stringifyBytes(p->mem_size()) << std::endl;
+
 }

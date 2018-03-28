@@ -6,27 +6,28 @@
 
 
 BUILD_DIR := build
-SRC_DIRS := src
 HEADERS_DIRS := include
 TEST_SRCS_DIRS := test
 
 HEADERS := $(shell find $(HEADERS_DIR) -name *.hpp)
-SRCS := $(shell find $(SRC_DIRS) -not -name main.cpp -and \( -name *.cpp -or -name *.c -or -name *.s \))
-OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
 TEST_SRCS := $(shell find $(TEST_SRCS_DIRS) -name *.cpp)
 TESTS := $(TEST_SRCS:%.cpp=$(BUILD_DIR)/%.bin)
 
-DEPS := $(OBJS:.o=.d) $(TESTS:=.d)
+DEPS := $(TESTS:=.d)
 
 LDFLAGS := -pthread -lm
-TEST_LDFLAGS := $(LDFLAGS) $(LDFLAGS) -lboost_unit_test_framework
+TEST_LDFLAGS := $(LDFLAGS) -lboost_unit_test_framework
 
-INC_DIRS := include
+INC_DIRS := include /usr/include/eigen3
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 INC_TEST_FLAGS := $(INC_FLAGS)
 
-CPPFLAGS := -fdiagnostics-color=always -std=c++17 -Wall -Wpedantic -fopenmp -g3 -MMD -MP
+CCPFLAGS_MODE_HARDENER =  -fstack-protector-all
+CCPFLAGS_MODE_DEBUG :=  -g -Og $(CCPFLAGS_MODE_HARDENER)
+#CCPFLAGS_MODE_RELEASE :=  -O3
+
+CPPFLAGS := -fdiagnostics-color=auto -std=c++17 -Wall -Wpedantic -fopenmp -pipe -MMD -MP $(CCPFLAGS_MODE_DEBUG)
 CCPOBJFLAGS := $(CPPFLAGS) $(INC_FLAGS)
 CCPTESTFLAGS := $(CPPFLAGS) $(TEST_LDFLAGS) $(CPPFLAGS) $(INC_TEST_FLAGS) -DBOOST_TEST_DYN_LINK
 
@@ -34,7 +35,7 @@ MKDIR_P ?= mkdir -p
 
 .PHONY: clean all
 
-all: $(OBJS) $(TESTS)
+all: $(TESTS) 
 
 # c++ source
 $(BUILD_DIR)/src/%.cpp.o: src/%.cpp  $(HEADERS)
@@ -53,6 +54,3 @@ clean:
 	$(RM) -r $(BUILD_DIR) doc
 
 -include $(DEPS)
-
-
-

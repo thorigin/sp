@@ -14,6 +14,7 @@
  * \internal Optimizations hints
  */
 #ifdef __GNUC__
+#define sp_restrict __restrict__
 /**
  * hot, inline
  */
@@ -36,6 +37,7 @@
 #define sp_unlikely(x)     __builtin_expect(!!(x), 0)
 
 #else
+#define sp_restrict
 #define sp_hot inline
 #define sp_hot_pure inline
 #define sp_hot_no_inline

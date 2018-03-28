@@ -1,6 +1,5 @@
 #!/bin/bash
-DIR=$(basedir $@)
-echo "DIR is $DIR"
+cd "$(dirname "$0")"
 TESTS=./build/test/test*.bin
 for i in $TESTS; do
     echo "Executing $i tests..."

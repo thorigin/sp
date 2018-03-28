@@ -10,6 +10,7 @@
 #define SP_UTIL_TIMING_HPP
 
 #include <iostream>
+#include <iomanip>
 #include <chrono>
 #include "sp/config.hpp"
 

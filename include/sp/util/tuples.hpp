@@ -206,6 +206,35 @@ using tuple_push_t = tuple_push_back_t<Tuple, T>;
 template<typename Tuple, typename T>
 using tuple_push_front_t = typename detail::tuple_push_front_impl<Tuple, T>::type;
 
+namespace detail {
+
+    template<size_t idx, typename ... T>
+    constexpr auto& reverse_helper_get(std::tuple<T...>& tuple) {
+        return std::get<sizeof...(T) - idx - 1>(tuple);
+    }
+
+    template<typename ... T, size_t ... Indexes>
+    constexpr auto reverse_helper(std::tuple<T...>& tuple, std::index_sequence<Indexes...>) {
+        return std::tie(
+            reverse_helper_get<Indexes, T...>(tuple)...
+        );
+    }
+}
+
+/**
+ * \brief Reverse a tuple
+ */
+template<typename ... T>
+constexpr auto reverse(std::tuple<T...>& tuple) {
+    return detail::reverse_helper(tuple, std::index_sequence_for<T...>{});
+}
+
+/**
+ * Reverse a tuple
+ */
+template<typename Tuple>
+using tuple_reverse_t = decltype(reverse(Tuple{}));
+
 /**
  * \brief Tuple View
  *

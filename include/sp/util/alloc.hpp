@@ -28,9 +28,8 @@ SP_UTIL_NAMESPACE_BEGIN
  * \return
  */
 template<typename T, size_t alignment = 32>
-sp_hot T aligned_alloc(const size_t& size) {
-    static_assert(std::is_pointer<T>::value, "T must be a pointer type");
-    return static_cast<T>(boost::alignment::aligned_alloc(alignment, size * sizeof(T)));
+sp_hot T* aligned_alloc(const size_t& size) {
+    return static_cast<T*>(boost::alignment::aligned_alloc(alignment, size * sizeof(T)));
 }
 
 /**
@@ -41,9 +40,8 @@ sp_hot T aligned_alloc(const size_t& size) {
  * \return
  */
 template<typename T>
-sp_hot T aligned_alloc(const size_t& alignment, const size_t& size) {
-    static_assert(std::is_pointer<T>::value, "T must be a pointer type");
-    return static_cast<T>(boost::alignment::aligned_alloc(alignment, size * sizeof(T)));
+sp_hot T* aligned_alloc(const size_t& alignment, const size_t& size) {
+    return static_cast<T*>(boost::alignment::aligned_alloc(alignment, size * sizeof(T)));
 }
 
 /**

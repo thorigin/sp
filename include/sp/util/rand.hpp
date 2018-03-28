@@ -13,8 +13,10 @@
 #include <memory>
 #include <limits>
 #include <set>
-#include "sp/config.hpp"
 #include <boost/random.hpp>
+
+#include "sp/config.hpp"
+#include "hints.hpp"
 
 SP_UTIL_NAMESPACE_BEGIN
 
