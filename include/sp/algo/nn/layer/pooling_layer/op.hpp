@@ -11,6 +11,7 @@
 
 #include <cmath>
 #include <limits>
+#include "sp/util/hints.hpp"
 
 SP_ALGO_NN_NAMESPACE_BEGIN
 
@@ -30,18 +31,18 @@ struct pool_op {
      * Add sample to the pool operation
      */
     template<typename T>
-    inline void sample(     const T& in,
-                            const size_t& si,
-                            const size_t& od,
+    sp_hot void sample(     const T& in,
+                            const size_t& s,
+                            const size_t& d,
                             const size_t& y,
                             const size_t& x) {
-        derived().sample(in, si, od, y, x);
+        derived().sample(in, s, d, y, x);
     }
 
     /**
      * Retrieve the result of the pool operation
      */
-    inline auto result() {
+    sp_hot auto result() {
         return derived().result();
     }
 
@@ -56,24 +57,22 @@ struct pool_op {
  */
 struct mean_pooling_op : pool_op<mean_pooling_op> {
 
-    mean_pooling_op() : total(0), samples(0) {}
+    mean_pooling_op(float_t samples_total) : total(0), samples(samples_total) {}
 
-    template<typename T>
-    inline void sample(     const T& in,
-                            const size_t& si,
-                            const size_t& od,
+    sp_hot void sample(     const tensor_4& in,
+                            const size_t& s,
+                            const size_t& d,
                             const size_t& y,
                             const size_t& x) {
-        ++samples;
-        total += in;
+        total += in(s, d, y, x);
     }
 
-    inline auto result() {
+    sp_hot auto result() {
         return total / samples;
     }
 
     float_t total;
-    size_t samples;
+    float_t samples;
 };
 
 
@@ -83,23 +82,23 @@ struct mean_pooling_op : pool_op<mean_pooling_op> {
 struct max_pooling_op : pool_op<max_pooling_op> {
 
     using indices_array = std::array<size_t, 4>;
-    max_pooling_op() : max(std::numeric_limits<float_t>::min()), input_idx() {}
+    max_pooling_op(float_t /* sample_count, ignore */) : max(std::numeric_limits<float_t>::min()), input_idx() {}
 
-    template<typename T>
-    inline void sample( const T& in,
+    sp_hot void sample( const tensor_4& in,
                         const size_t& s,
                         const size_t& d,
                         const size_t& y,
                         const size_t& x) {
         using namespace std;
-        if(in > max) {
-            max = in;
+        auto& input = in(s, d, y, x);
+        if(input > max) {
+            max = input;
             /* stores where the sample came from */
             input_idx = indices_array{s, d, y, x};
         }
     }
 
-    inline auto result() {
+    sp_hot auto result() {
         return max;
     }
 

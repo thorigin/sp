@@ -25,6 +25,13 @@
 
 SP_ALGO_NN_DETAIL_NAMESPACE_BEGIN
 
+/**
+ * \brief Activation operator helper struct
+ *
+ * Applies an activation operator to the input for forward propagation
+ * and applies the activation's derivative to the output gradient for
+ * back propagation.
+ */
 template<typename Op, typename InputDims, typename Enable = void>
 struct activation_op_helper;
 
@@ -44,11 +51,10 @@ struct activation_op_helper<
     using op_type = Op;
     using op_deriv_type = typename Op::derivative;
 
-    void fprop(input_type& input, output_type& output) {
+    void fprop(tensor_4& input, tensor_4& output) {
         /* Number of samples in the input */
         const size_t samples = input.dimension(0);
-        /* Prepare the output */
-        prepare_output<input_dims>(samples, output);
+        #pragma omp parallel for simd
         for(size_t si = 0; si < samples; ++si) {
             for(size_t id = 0; id < input_dims::d; ++id)  {
                 for (size_t ih = 0; ih < input_dims::h; ++ih) {
@@ -60,23 +66,20 @@ struct activation_op_helper<
         }
     }
 
-    void bprop(     previous_output_type& prev_out,
-                    previous_delta_type& prev_delta,
-                    current_type& curr_out,
-                    current_delta_type& curr_delta) {
+    void bprop(     tensor_4& prev_out,
+                    tensor_4& prev_delta,
+                    tensor_4& curr_out,
+                    tensor_4& curr_delta) {
         /**
          * Number of samples in the previous output
          */
         const size_t samples = prev_out.dimension(0);
-
-        /* Prepare the output */
-        prepare_output<input_dims>(samples, prev_out);
-
+        #pragma omp parallel for simd
         for(size_t si = 0; si < samples; ++si) {
             for(size_t id = 0; id < input_dims::d; ++id)  {
-                for (size_t ih = 0; ih < input_dims::h; ++ih) {
-                    for (size_t iw = 0; iw < input_dims::w; ++iw) {
-                       prev_delta(si, id, ih, iw) = curr_delta(si, id, ih, iw) * op_deriv(curr_out(si, id, ih, iw));
+                for (size_t iy = 0; iy < input_dims::h; ++iy) {
+                    for (size_t ix = 0; ix < input_dims::w; ++ix) {
+                       prev_delta(si, id, iy, ix) = curr_delta(si, id, iy, ix) * op_deriv(curr_out(si, id, iy, ix));
                    }
                }
             }
@@ -86,38 +89,51 @@ struct activation_op_helper<
     op_type op;
     op_deriv_type op_deriv;
 };
-//
-//template<typename Op, typename InputDims>
-//struct activation_op_helper<
-//    Op,
-//    InputDims,
-//    std::enable_if_t<
-//        std::is_same_v
-//            typename Op::category,
-//            activation_op_depth_slice_category
-//        >
-//    >
-//> {
-//    using input_dims = InputDims;
-//
-//    using op_type = Op;
-//    using op_deriv_type = Op::deriv;
-//
-//    void fprop(input_type& input, output_type& output) {
-//
-//        throw std::runtime_error("Not implemented yet");
-//    }
-//
-//    void bprop(     previous_output_type& prev_out,
-//                    previous_delta_type& prev_delta,
-//                    current_delta_type& curr_delta) {
-//
-//        throw std::runtime_error("Not implemented yet");
-//    }
-//
-//    op_type op;
-//    op_deriv_type op_deriv;
-//};
+
+
+template<typename Op, typename InputDims>
+struct activation_op_helper<
+    Op,
+    InputDims,
+    std::enable_if_t<
+        std::is_same_v<
+            typename Op::category,
+            activation_op_depth_slice_category
+        >
+    >
+> {
+
+    using input_dims = InputDims;
+    using op_type = Op;
+    using op_deriv_type = typename Op::derivative;
+
+    void fprop(tensor_4& input, tensor_4& output) {
+        /* Number of samples in the input */
+        const size_t samples = input.dimension(0);
+        #pragma omp parallel for simd
+        for(size_t si = 0; si < samples; ++si) {
+            throw std::runtime_error("Not implemented yet");
+        }
+    }
+
+    void bprop(     tensor_4& prev_out,
+                    tensor_4& prev_delta,
+                    tensor_4& curr_out,
+                    tensor_4& curr_delta) {
+        /**
+         * Number of samples in the previous output
+         */
+        const size_t samples = prev_out.dimension(0);
+        #pragma omp parallel for simd
+        for(size_t si = 0; si < samples; ++si) {
+            throw std::runtime_error("Not implemented yet");
+        }
+    }
+
+    op_type op;
+    op_deriv_type op_deriv;
+};
+
 
 SP_ALGO_NN_DETAIL_NAMESPACE_END
 

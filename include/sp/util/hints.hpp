@@ -46,6 +46,8 @@
 #define unlikely(x) (x)
 #endif
 
+#define SP_UNUSED(x)        (void)(x)
+
 
 #endif /* SP_UTIL_HINTS_HPP */
 

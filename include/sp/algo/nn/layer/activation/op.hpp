@@ -200,14 +200,13 @@ struct tanh_deriv_activation_op : activation_op<tanh_deriv_activation_op> {
     auto operator()(const T& x) const {
         using namespace std;
         //derivative (1 - tanh^2(y)), x = tanh(y)
-        return (1.0f - x * x);
+        return (1.0f - (x * x));
     }
 
     valid_range range() const {
         return {-0.8, 0.8};
     }
 };
-
 
 /**
  * \brief SoftMax Derivative Activation Op

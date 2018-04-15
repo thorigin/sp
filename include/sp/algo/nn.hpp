@@ -14,6 +14,7 @@
 #include "nn/matrix.hpp"
 #include "nn/layer.hpp"
 #include "nn/network.hpp"
+#include "nn/training.hpp"
 #include "nn/loss.hpp"
 
 #endif	/* SP_ALGO_NN_HPP */

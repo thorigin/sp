@@ -11,31 +11,37 @@
 #ifndef SP_UTIL_DATASET_MNIST_DATA_READER_HPP
 #define SP_UTIL_DATASET_MNIST_DATA_READER_HPP
 
-#include <vector>
-#include <utility>
-#include <algorithm>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/endian/conversion.hpp>
-#include <array>
+#include <limits>
 #include <exception>
-#include <vector>
+#include <boost/filesystem.hpp>
+#include <boost/endian/conversion.hpp>
+
+#include "sp/algo/nn/types.hpp"
+
 
 SP_UTIL_NAMESPACE_BEGIN
 
-namespace fs = boost::filesystem;
-
-using mnist_images_result = std::vector<std::vector<std::vector<uint8_t>>>;
-using mnist_labels_result = std::vector<uint8_t>;
+using mnist_images_result = sp::algo::nn::sample_vector_type;
+using mnist_labels_result = sp::algo::nn::class_vector_type;
 
 struct mnist_data_reader  {
 
-    const static size_t default_samples_read = std::numeric_limits<size_t>::max();
+    using scaling_range = sp::algo::nn::valid_range;
 
-    mnist_data_reader(const std::string& images_file, const std::string& labels_file, size_t batch = default_samples_read)
+    mnist_data_reader(      const std::string& images_file,
+                            const std::string& labels_file,
+                            scaling_range scale = {-1.0f, 1.0f},
+                            size_t pad_h_ = 0,
+                            size_t pad_w_ = 0,
+                            size_t batch = std::numeric_limits<size_t>::max())
         : images_stream(), labels_stream(), count(0),
-          img_height(), img_width(), batch_size(batch),
-          current_images_index(0), current_labels_index(0) {
+          img_height(), img_width(),
+          current_images_index(0), current_labels_index(0),
+          scaling(scale),
+          pad_h(pad_h_), pad_w(pad_w_),
+          batch_size(batch) {
+
+        namespace fs = boost::filesystem;
 
         //read file
         fs::path images_path(images_file);
@@ -120,31 +126,53 @@ struct mnist_data_reader  {
     }
 
     mnist_images_result read_images() {
-        //batch_sized
-        mnist_images_result result;
-        for(size_t si = 0; si < batch_size; ++si) {
-            mnist_images_result::value_type m;
-            m.reserve(img_height);
-            for (size_t hi = 0; hi < img_height; hi++) {
-                mnist_images_result::value_type::value_type v;
-                v.reserve(img_width);
-                for (size_t wi = 0; wi < img_width; wi++) {
-                    v.emplace_back(read_stream<int32_t>(images_stream));
-                }
-                m.emplace_back(std::move(v));
+        /* Initialize result to a vector of batch_size */
+        mnist_images_result result(batch_size,
+            mnist_images_result::value_type(
+                1,
+                img_height + 2 * pad_h,
+                img_width + 2 * pad_w
+            )
+        );
+
+        using namespace sp::algo::nn;
+
+        /* raw input bufffer */
+        std::vector<uint8_t> buff(img_height * img_width);
+
+        auto &[ min, max] = scaling;
+
+        for(size_t b = 0; b < batch_size; ++b) {
+            if(pad_w || pad_h) {
+                /* initialize whole image to scale minimum */
+                result[b].setConstant(min);
             }
-            result.emplace_back(std::move(m));
+            /* read bytes into buff */
+            images_stream.read(reinterpret_cast<char*>(&buff[0]), img_height * img_width);
+
+            /* transform each ubyte into a float given the range [min,max] */
+            for(size_t row = 0; row < img_height; ++row) {
+                /* for every row, transform values */
+                std::transform(
+                    &buff[row * img_width],
+                    &buff[(row+1) * img_width],
+                    &result[b](0, row+pad_h, pad_w),
+                    [&](const uint8_t& val) {
+                        return (static_cast<float_t>(val) / 255.0f) * (max - min) + min;
+                    }
+                );
+            }
         }
         current_images_index += batch_size;
         return result;
     }
 
     mnist_labels_result read_labels() {
-        //batch_sized
-        mnist_labels_result result;
-        result.reserve(batch_size);
-        for(size_t si = 0; si < batch_size; ++si) {
-            result.emplace_back(read_stream<uint8_t>(labels_stream));
+        mnist_labels_result result(batch_size, 0);
+        for(size_t b = 0; b < batch_size; ++b) {
+            uint8_t label;
+            labels_stream.read(reinterpret_cast<char*>(&label), 1);
+            result[b] = static_cast<size_t>(label);
         }
         current_labels_index += batch_size;
         return result;
@@ -153,21 +181,23 @@ struct mnist_data_reader  {
 private:
 
     template<typename T>
-    T read_stream(fs::fstream& stream) {
+    T read_stream(boost::filesystem::fstream& stream) {
         T val;
-        stream.read ((char*)&val, sizeof (T));
+        stream.read (reinterpret_cast<char*>(&val), sizeof (T));
         return boost::endian::big_to_native(val);
     }
 
-    fs::fstream images_stream;
-    fs::fstream labels_stream;
+    boost::filesystem::fstream images_stream;
+    boost::filesystem::fstream labels_stream;
     size_t count;
     size_t img_height;
     size_t img_width;
-    size_t batch_size;
     size_t current_images_index;
     size_t current_labels_index;
-
+    scaling_range scaling;
+    size_t pad_h;
+    size_t pad_w;
+    size_t batch_size;
 };
 
 SP_UTIL_NAMESPACE_END

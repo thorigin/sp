@@ -11,6 +11,7 @@
 
 #include <functional>
 #include <tuple>
+#include "sp/util/hints.hpp"
 
 #include "types.hpp"
 
@@ -19,12 +20,12 @@ SP_UTIL_NAMESPACE_BEGIN
 namespace detail {
 
     template<typename ... T, typename UnaryFunction, size_t ... Indexes>
-    void for_each_tuple_helper(std::tuple<T...>& tuple, UnaryFunction func, std::index_sequence<Indexes...>) {
+    sp_hot void for_each_tuple_helper(std::tuple<T...>& tuple, UnaryFunction func, std::index_sequence<Indexes...>) {
         ((func(std::get<Indexes>(tuple))), ...);
     }
 
     template<typename ... T, typename UnaryFunction>
-    void for_each_tuple(std::tuple<T...>& tuple, UnaryFunction func) {
+    sp_hot void for_each_tuple(std::tuple<T...>& tuple, UnaryFunction func) {
         for_each_tuple_helper(tuple, func, std::index_sequence_for<T...>{});
     }
 }
@@ -33,7 +34,7 @@ namespace detail {
  * \brief Apply UnaryFunction  (func) to every element in the range of [start, end).
  */
 template<typename Iterator, typename UnaryFunction>
-void for_each(Iterator start, Iterator end, UnaryFunction func) {
+sp_hot void for_each(Iterator start, Iterator end, UnaryFunction func) {
     std::for_each(start, end, func);
 }
 
@@ -41,6 +42,7 @@ void for_each(Iterator start, Iterator end, UnaryFunction func) {
  * \brief Apply UnaryFunction (func) to every element in the range specified
  */
 template<typename Range, typename UnaryFunction>
+sp_hot
 enable_if_range_t<Range>
 for_each(Range& range, UnaryFunction func) {
     std::for_each(std::begin(range), std::end(range), func);
@@ -50,6 +52,7 @@ for_each(Range& range, UnaryFunction func) {
  * \brief Apply UnaryFunction (func) to every element in the tuple
  */
 template<typename Tuple, typename UnaryFunction>
+sp_hot
 enable_if_tuple_t<Tuple>
 for_each(Tuple&& tuple, UnaryFunction func) {
     detail::for_each_tuple(tuple, func);

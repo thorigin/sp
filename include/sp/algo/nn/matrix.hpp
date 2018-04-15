@@ -142,48 +142,6 @@ auto as_tensor(matrix& mat) {
 }
 
 
-/**
- * \brief initializes a tensor to the specification
- * \param tensor
- */
-template<size_t ... Sizes, typename Tensor>
-void tensor_resize(Tensor& tensor) {
-    tensor.resize(Sizes...);
-}
-
-/**
- * \brief Zero initializes a tensor to the specification
- * \param tensor
- */
-template<size_t ... Sizes, typename Tensor>
-void tensor_zero(Tensor& tensor) {
-    tensor.resize(Sizes...);
-    tensor.setZero();
-}
-
-
-/**
- * \brief Randomly initializes a tensor to the specification
- * \param tensor
- */
-template<size_t ... Sizes, typename Tensor>
-void tensor_rand(Tensor& tensor) {
-    tensor.resize(Sizes...);
-    tensor.setRandom();
-}
-
-/**
- * \brief Randomly initializes a tensor to the specification
- * \param tensor
- * \param val
- */
-template<size_t ... Sizes, typename Tensor>
-void tensor_val(Tensor& tensor, const typename Tensor::Scalar& val) {
-    tensor.resize(Sizes...);
-    tensor.setConstant(val);
-}
-
-
 SP_ALGO_NN_NAMESPACE_END
 
 #endif	/* SP_ALGO_NN_MATRIX_HPP */

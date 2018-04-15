@@ -11,6 +11,7 @@
 
 #include "op.hpp"
 #include "layer.hpp"
+#include "sp/util/hints.hpp"
 
 SP_ALGO_NN_NAMESPACE_BEGIN
 
@@ -20,13 +21,17 @@ SP_ALGO_NN_NAMESPACE_BEGIN
 struct max_pooling_algorithm : pooling_algorithm<max_pooling_op, max_pooling_algorithm> {
 
     template<typename InputDims, typename OutputDims, typename KernelParams>
-    void prepare(const size_t& samples) {
+    void configure_impl(const size_t& samples) {
         max.resize(samples, InputDims::d, InputDims::h, InputDims::w);
         is_max.resize(samples, InputDims::d, InputDims::h, InputDims::w);
-        is_max.setConstant(false);
     }
 
-    inline auto subsample(        max_pooling_op& op,
+    template<typename InputDims, typename OutputDims, typename KernelParams>
+    void before_forward_impl(const size_t& samples) {
+        is_max.setConstant(0.0f);
+    }
+
+    sp_hot auto subsample_impl(        max_pooling_op& op,
                                     const size_t& s,
                                     const size_t& d,
                                     const size_t& y,
@@ -39,32 +44,27 @@ struct max_pooling_algorithm : pooling_algorithm<max_pooling_op, max_pooling_alg
         /**
          * Set the maximum value
          */
-        is_max(s, d, op.input_idx[2], op.input_idx[3]) = true;
+        is_max(s, d, op.input_idx[2], op.input_idx[3]) = 1.0f;
         return op.result();
     }
 
-    inline auto upsample(   current_delta_type& curr_delta,
+    sp_hot auto upsample_impl(   tensor_4& curr_delta,
                             const size_t& s,
                             const size_t& d,
                             const size_t& y,
                             const size_t& x) {
         /**
          * Upsample to the above current delta coordinates
-         */         
-        
-        if(is_max(s, d, y, x)) {
-            auto [max_y, max_x] = max(s, d, y, x);
-            return curr_delta(s, d, max_y, max_x);
-        } else {
-            return 0.0f;
-        }
+         */
+        auto [max_y, max_x] = max(s, d, y, x);
+        return curr_delta(s, d, max_y, max_x) * is_max(s, d, y, x);
     }
 
     /**
      * Tensor, rank 4, (si, od, oy, ox), stored tuple of (y, x)
      */
     tensor_n<4, std::tuple<size_t, size_t>> max;
-    tensor_n<4, bool> is_max;
+    tensor_n<4, float_t> is_max;
 };
 
 
@@ -74,13 +74,13 @@ struct max_pooling_algorithm : pooling_algorithm<max_pooling_op, max_pooling_alg
 template<
     typename InputVolume,
     typename KernelParams = kernel_params_default,
-    typename Connectivity = full_connectivity
+    bool Biased = true
 >
 using max_pooling_layer = pooling_layer<
     max_pooling_algorithm,
     InputVolume,
     KernelParams,
-    Connectivity
+    Biased
 >;
 
 

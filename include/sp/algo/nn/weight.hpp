@@ -6,10 +6,4 @@
  * Written by Omar Thor <omarthoro@gmail.com>, 2017
  */
 
-#ifndef SP_ALGO_NN_OPTIMIZER_MOMENTUM_HPP
-#define SP_ALGO_NN_OPTIMIZER_MOMENTUM_HPP
-
-
-
-#endif	/* SP_ALGO_NN_OPTIMIZER_MOMENTUM_HPP */
-
+#include "weight/weight.hpp"

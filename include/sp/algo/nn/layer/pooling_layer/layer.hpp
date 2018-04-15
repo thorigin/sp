@@ -13,6 +13,7 @@
 #include "../layer.hpp"
 #include "../detail/layers.hpp"
 #include "op.hpp"
+#include "../../weight.hpp"
 
 
 SP_ALGO_NN_NAMESPACE_BEGIN
@@ -31,34 +32,39 @@ struct pooling_algorithm {
 
     using op_type = PoolingOperator;
 
-    
     template<typename InputDims, typename OutputDims, typename KernelParams>
-    void prepare(const size_t& samples) {
-        derived().template prepare<InputDims, OutputDims, KernelParams>(samples);
+    void configure(const size_t& samples) {
+        derived().template configure_impl<InputDims, OutputDims, KernelParams>(samples);
     }
 
-    inline auto subsample(        max_pooling_op& op,
+    template<typename InputDims, typename OutputDims, typename KernelParams>
+    void before_forward(const size_t& samples) {
+        derived().template before_forward_impl<InputDims, OutputDims, KernelParams>(samples);
+    }
+
+    sp_hot auto subsample(          op_type& op,
                                     const size_t& s,
                                     const size_t& d,
                                     const size_t& y,
                                     const size_t& x) {
-        return derived().down_sample(op, s, d, y, x);
+        return derived().subsample_impl(op, s, d, y, x);
     }
 
     /**
      * Return the upsampled value
      */
-    inline auto upsample(   current_delta_type& curr_delta,
+    sp_hot auto upsample(   tensor_4& curr_delta,
                             const size_t& si,
                             const size_t& od,
                             const size_t& iy,
                             const size_t& ix) {
-        return derived().upsample(curr_delta, si, od, iy, ix);
+        return derived().upsample_impl(curr_delta, si, od, iy, ix);
     }
 
     derived_type& derived() {
         return static_cast<derived_type&>(*this);
     }
+
 };
 
 /**
@@ -70,12 +76,14 @@ template<
     typename PoolingAlgorithm,
     typename InputVolume,
     typename KernelParams = pooling_kernel_params<>,
-    typename Connectivity = full_connectivity
+    bool Biased = true
 >
 struct pooling_layer : layer<
     InputVolume,
     detail::pooling_kernel_out_dims_t<InputVolume, KernelParams>,
-    pooling_layer<PoolingAlgorithm, InputVolume, KernelParams, Connectivity>
+    pooling_layer<PoolingAlgorithm, InputVolume, KernelParams>,
+    true,
+    true
 > {
 
     /**
@@ -83,8 +91,10 @@ struct pooling_layer : layer<
      */
     using base = layer<
         InputVolume,
-        detail::convolution_kernel_out_dims_t<InputVolume, KernelParams>,
-        pooling_layer<PoolingAlgorithm, InputVolume, KernelParams, Connectivity>
+        detail::pooling_kernel_out_dims_t<InputVolume, KernelParams>,
+        pooling_layer<PoolingAlgorithm, InputVolume, KernelParams>,
+        true,
+        true
     >;
 
     /**
@@ -92,15 +102,12 @@ struct pooling_layer : layer<
      */
     static_assert(util::is_instantiation_of_v<KernelParams, kernel_params>, "KernelParams template parameter must be an instance of kernel_params");
 
+    constexpr static bool biased = Biased;
+
     /**
      * Kernel parameters
      */
     using kernel_params = KernelParams;
-
-    /**
-     * Connectivity type (full, ngroups, etc)
-     */
-    using connectivity_type = Connectivity;
 
     /**
      * \brief Input Dimensions
@@ -115,61 +122,46 @@ struct pooling_layer : layer<
     /**
      * \brief Weight dimensions
      */
-    using weights_dims = weight_dims<
-        1,
-        input_dims::d,
-        1,
-        1
-    >;
+    using weights_dims = weight_dims<output_dims::d>;
 
     using pooling_algorithm_type = PoolingAlgorithm;
 
     using down_sampler_op_type = typename PoolingAlgorithm::op_type;
 
-    pooling_layer()
-        : w(), dw(), b(), db(), connections(), pooling_algorithm() {
-        detail::init_weights_one<weights_dims>(w);
-        detail::init_weights_delta<weights_dims>(1, dw);
-        detail::init_bias<input_dims::d>(b);
+    pooling_layer() {
+        /**
+         * Default to a fixed weight initializer as network default is not
+         * appropriate for pooling operations
+         */
+        this->weight_initializer = fixed_weight_initializer(1);
+        this->bias_initializer = fixed_weight_initializer(0);
     }
 
-    void forward_prop_impl(input_type& input, output_type& output) {
+    void forward_prop_impl(tensor_4& input, tensor_4& output) {
         /**
          * Number of samples in the input
          */
         const size_t samples = input.dimension(0);
 
-        /**
-         * Initialize the output to match the number of samples
-         * and the output dimensions
-         */
-        detail::prepare_output<output_dims>(samples, output);
+        pooling_algorithm.template before_forward<input_dims, output_dims, kernel_params>(samples);
 
-        pooling_algorithm.template prepare<input_dims, output_dims, kernel_params>(samples);
-
-        for (size_t si = 0; si < samples; ++si) { // K
-            for (size_t od = 0; od < output_dims::d; ++od) { //D_out
-                auto weight = w(0, od, 0, 0);
-                auto bias = b(od);
-
-                for (size_t id = 0; id < input_dims::d; ++id) { //D_in
-                    if(connections(id, od)) {
-                        
-                        for (size_t oy = 0; oy < output_dims::h; ++oy) {
-                            for (size_t ox = 0; ox < output_dims::w; ++ox) {
-                                down_sampler_op_type op;
-                                for (size_t ky = 0; ky < kernel_params::h; ++ky) {
-                                    for (size_t kx = 0; kx < kernel_params::w; ++kx) {
-                                        auto in_val = input(si, id, oy * kernel_params::s_h + ky, ox* kernel_params::s_w +kx);
-                                        op.sample(in_val, si, id, oy * kernel_params::s_h + ky, ox* kernel_params::s_w +kx);
-                                    }
-                                }
-                                float res = pooling_algorithm.subsample(op, si, od, oy, ox);
-                                res *= weight;
-                                res += bias;                                
-                                output(si, od, oy, ox) = res;
+        #pragma omp parallel for simd
+        for (size_t si = 0; si < samples; ++si) {
+            for (size_t od = 0; od < output_dims::d; ++od) {
+                auto& weight = w(od, 0, 0, 0);
+                auto& bias = b(od);
+                for (size_t oy = 0, iny = 0; oy < output_dims::h; ++oy, iny += kernel_params::s_h) {
+                    for (size_t ox = 0, inx = 0; ox < output_dims::w; ++ox, inx += kernel_params::s_w) {
+                        down_sampler_op_type op(kernel_params::h * kernel_params::w);
+                        for (size_t ky = 0; ky < kernel_params::h; ++ky) {
+                            for (size_t kx = 0; kx < kernel_params::w; ++kx) {
+                                op.sample(input, si, od, iny+ky, inx+kx);
                             }
                         }
+                        float_t res = pooling_algorithm.subsample(op, si, od, oy, ox);
+                        res *= weight;
+                        res += bias;
+                        output(si, od, oy, ox) = res;
                     }
                 }
             }
@@ -181,60 +173,40 @@ struct pooling_layer : layer<
      *
      * \todo Optimize
      */
-    void backward_prop_impl(    previous_output_type& prev_out,
-                                previous_delta_type& prev_delta,
-                                current_type& curr_out,
-                                current_delta_type& curr_delta)  {
+    void backward_prop_impl(    tensor_4& prev_out,
+                                tensor_4& prev_delta,
+                                tensor_4& curr_out,
+                                tensor_4& curr_delta) {
         /**
          * Number of samples in the input
          */
         const size_t samples = prev_out.dimension(0);
 
-        /**
-         * Initialize the previous delta to match the number of samples in the
-         * current delta
-         */
-        detail::prepare_output<input_dims>(samples, prev_delta);
+        #pragma omp parallel for simd
+        for (size_t si = 0; si < samples; ++si) {
+            for (size_t d = 0; d < output_dims::d; ++d) {
+                auto& weight = w(d, 0, 0, 0);
+                for (size_t iy = 0; iy < input_dims::h; ++iy) {
+                    for (size_t ix = 0; ix < input_dims::w; ++ix) {
+                        /* Upsample the value from output delta */
+                        auto upsampled_cd = pooling_algorithm.upsample(curr_delta, si, d, iy, ix);
+                        prev_delta(si, d, iy, ix) += weight * upsampled_cd;
+                        dw(si, d, 0, 0, 0) += prev_out(si, d, iy, ix) * upsampled_cd;
+                    }
+                }
 
-        /**
-         * Ensure that bias can handle the sample delta
-         */
-        detail::prepare_bias_delta<output_dims>(samples, db);
-
-        /**
-         * Initialize weight delta
-         */
-        detail::prepare_delta_weights<weights_dims>(samples, dw);
-
-        for (size_t si = 0; si < samples; ++si) { // K
-            for (size_t od = 0; od < output_dims::d; ++od) { //D_out
-                auto weight = w(od, 0, 0, 0);
-
-                for (size_t id = 0; id < input_dims::d; ++id) { //D_in
-                    if(connections(id, od)) {                        
-                        float_t delta = 0;
-                        for (size_t iy = 0; iy < input_dims::h; ++iy) {
-                            for (size_t ix = 0; ix < input_dims::w; ++ix) {
-                                /**
-                                 * Upsample the value from curr_delta at (si, od, iy, ix)
-                                 */
-                                auto upsampled_cd = pooling_algorithm.upsample(curr_delta, si, od, iy, ix);
-                                prev_delta(si, id, iy, ix) = weight * upsampled_cd;
-                                delta += prev_out(si, id, iy, ix) * upsampled_cd;
-                            }
-                        }
-                        
-                        dw(si, 0, od, 0, 0) += delta;
-
-                        for (size_t oy = 0; oy < output_dims::h; ++oy) {
-                            for (size_t ox = 0; ox < output_dims::w; ++ox) {
-                                db(si, od) += curr_delta(si, id, oy, ox);
-                            }
-                        }
+                for (size_t oy = 0; oy < output_dims::h; ++oy) {
+                    for (size_t ox = 0; ox < output_dims::w; ++ox) {
+                        db(si, d) += curr_delta(si, d, oy, ox);
                     }
                 }
             }
         }
+    }
+
+    void configuration_impl(const size_t& batch_size, bool reset) {
+        this->default_configuration(batch_size, reset);
+        pooling_algorithm.template configure<input_dims, output_dims, kernel_params>(batch_size);
     }
 
 
@@ -266,10 +238,8 @@ struct pooling_layer : layer<
      */
     bias_delta_type db;
 
-    connectivity_type connections;
-
     pooling_algorithm_type pooling_algorithm;
-    
+
 };
 
 

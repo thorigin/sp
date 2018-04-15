@@ -111,8 +111,8 @@ struct table_connectivity {
 
     table_connectivity() : table({Values...}) {}
 
-    inline bool operator()(const size_t& y, const size_t& x) {
-        return table[x * rows + y];
+    inline bool operator()(const size_t& x, const size_t& y) {
+        return table[y * cols + x];
     }
 
     std::vector<char> table;

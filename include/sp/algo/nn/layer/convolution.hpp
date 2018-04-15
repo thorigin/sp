@@ -26,6 +26,10 @@ SP_ALGO_NN_NAMESPACE_BEGIN
  * Convolves input by a set of feature kernels and returns the convolution
  * results
  *
+ * Note: This convolution implementation does not rotate the kernel
+ *       and is therefore not convolution but cross correlation, mathematically
+ *       speaking.
+ *
  * Summary of parameters (Soft and Hard, i.e. parameterized and derived)
  *  - N - Number of images in a mini-batch
  *  - C - The number of input feature maps
@@ -126,17 +130,7 @@ struct conv_layer : layer<
         kernel_params::w
     >;
 
-    conv_layer()
-        : w(), dw(), b(), db(), connections() {
-        detail::init_weights<weights_dims>(w);
-        detail::init_weights_delta<weights_dims>(1, dw);
-        if constexpr (biased) {
-            detail::init_bias<output_dims::d>(b);
-        }
-    }
-
-
-    void forward_prop_impl(input_type& input, output_type& output) {
+    void forward_prop_impl(tensor_4& input, tensor_4& output) {
 
         /**
          * Number of samples in the input
@@ -144,21 +138,16 @@ struct conv_layer : layer<
         const size_t samples = input.dimension(0);
 
         /**
-         * Initialize the output to match the number of samples
-         * and the output dimensions
-         */
-        detail::prepare_output<output_dims>(samples, output);
-
-        /**
          * Perform  forward propagation for every sample
          */
-        for (size_t si = 0; si < samples; ++si) { // K
+        #pragma omp parallel for simd
+        for (size_t si = 0; si < samples; ++si) {
             /**
              * Loop over the pairs of (D_out, D_in), i.e. input_dims::d*output_dims::d
              */
-            for (size_t od = 0; od < output_dims::d; ++od) { //D_out
-                for (size_t id = 0; id < input_dims::d; ++id) { //D_in
-                    if(connections(id, od)) {
+            for (size_t od = 0; od < output_dims::d; ++od) {
+                for (size_t id = 0; id < input_dims::d; ++id) {
+                    if(connections(od, id)) {
                         /*
                          * If the output channel is connected to the input channel,
                          * then perform convolution. This is done to support limited
@@ -169,19 +158,17 @@ struct conv_layer : layer<
                          * \todo add dilation
                          * \todo Optimize for smaller kernels (common, 2x2, 3x3, etc)
                          */
-                        constexpr size_t in_y_len = input_dims::h-output_dims::h;
-                        constexpr size_t in_x_len = input_dims::w-output_dims::w;
-                        for (size_t iny = 0, ds_y = 0; iny < in_y_len; iny += kernel_params::s_h, ++ds_y) {
-                            for (size_t inx = 0, ds_x =  0; inx < in_x_len; inx += kernel_params::s_w, ++ds_x) {
+                        for (size_t oy = 0, iny = 0; oy < output_dims::h; ++oy, iny += kernel_params::s_h) {
+                            for (size_t ox = 0, inx = 0; ox < output_dims::w; ++ox, inx += kernel_params::s_w) {
                                 float_t sum = 0;
                                 for (size_t ky = 0; ky < kernel_params::h; ++ky) {
                                     for (size_t kx = 0; kx < kernel_params::w; ++kx) {
-                                        auto in_val = input(si, id, iny+ky, inx+kx);
-                                        auto w_val = w(id, od, ky, kx);
+                                        auto& in_val = input(si, id, iny+ky, inx+kx);
+                                        auto& w_val = w(od, id, ky, kx);
                                         sum += in_val * w_val;
                                     }
                                 }
-                                output(si, od, ds_y, ds_x) += sum;
+                                output(si, od, oy, ox) += sum;
                             }
                         }
                     }
@@ -190,12 +177,7 @@ struct conv_layer : layer<
                     /**
                      * Add bias to every output vector the depth slice at output(od)
                      */
-                    using array_2d = std::array<int, 2>;
-                    output.chip(si, 0).chip(od, 0) +=
-                         b
-                        .chip(od, 0) // chip off output depth into a scalar tensor
-                        .reshape(array_2d{1, 1}) // reshape to 1x1
-                        .broadcast(array_2d{output_dims::h, output_dims::w}); // broadcast to match depth_slice
+                    output.chip(si, 0).chip(od, 0) = output.chip(si, 0).chip(od, 0) + b(od);
                 }
             }
         }
@@ -206,10 +188,10 @@ struct conv_layer : layer<
      *
      * \todo Optimize
      */
-    void backward_prop_impl(    previous_output_type& prev_out,
-                                previous_delta_type& prev_delta,
-                                current_type& curr_out,
-                                current_delta_type& curr_delta)  { //curr_delta
+    void backward_prop_impl(    tensor_4& prev_out,
+                                tensor_4& prev_delta,
+                                tensor_4& curr_out,
+                                tensor_4& curr_delta)  {
 
 
         /**
@@ -218,54 +200,26 @@ struct conv_layer : layer<
         const size_t samples = prev_out.dimension(0);
 
         /**
-         * @TODO the following prepare statements should perhaps be handled by
-         * the network layer
-         */
-
-        /**
-         * Initialize the previous delta to match the number of samples in the
-         * current delta 
-         */
-        detail::prepare_output<input_dims>(samples, prev_delta);
-
-        /**
-         * Ensure that bias can handle the sample delta
-         */
-        detail::prepare_bias_delta<output_dims>(samples, db);
-
-        /**
-         * Initialize weight delta
-         */
-        detail::prepare_delta_weights<weights_dims>(samples, dw);
-
-        /**
          * Perform back propagation
-         * 
+         *
          * For every sample in the input
          */
+        #pragma omp parallel for simd
         for(size_t si = 0; si < samples; ++si) {
             /**
              * For every (input depth, output depth) pair that is connected
-             */ 
-            for (size_t id = 0; id < input_dims::d; ++id) { //D_in
-                for (size_t od = 0; od < output_dims::d; ++od) { //D_out
-                    if(connections(id, od)) {
-                        /**
-                         * Propagate the current delta to the previous delta through the kernel
-                         */
-                        for (size_t oy = 0; oy < output_dims::h; ++oy) {
-                            for (size_t ox   = 0; ox < output_dims::w; ++ox) {
-                                /**
-                                 * Current delta 
-                                 */
-                                float_t dsrc = curr_delta(si, od, oy, ox);
-
+             */
+            for (size_t id = 0; id < input_dims::d; ++id) {
+                for (size_t od = 0; od < output_dims::d; ++od) {
+                    if(connections(od, id)) {
+                        /* Propagate the current delta to the previous delta through the kernel */
+                        for (size_t oy = 0, iny = 0; oy < output_dims::h; ++oy, iny += kernel_params::s_h) {
+                            for (size_t ox = 0, inx = 0; ox < output_dims::w; ++ox, inx += kernel_params::s_w) {
+                                float_t& grad = curr_delta(si, od, oy, ox);
                                 for (size_t wy = 0; wy < weights_dims::h; ++wy) {
                                     for (size_t wx = 0; wx < weights_dims::w; ++wx) {
-                                        auto w_val = w(id, od, wy, wx);
-                                        auto pdy = oy * kernel_params::s_h + wy;
-                                        auto pdx = ox * kernel_params::s_w + wx ;
-                                        prev_delta(si, id, pdy, pdx) += w_val * dsrc;
+                                        auto& w_val = w(od, id, wy, wx);
+                                        prev_delta(si, id, iny + wy, inx + wx) += w_val * grad;
                                     }
                                 }
                             }
@@ -273,23 +227,20 @@ struct conv_layer : layer<
                     }
                 }
             }
-
-            for (size_t id = 0; id < input_dims::d; ++id) { //D_in
-                for (size_t od = 0; od < output_dims::d; ++od) { //D_out
-                    if(connections(id, od)) {
+            for (size_t id = 0; id < input_dims::d; ++id) {
+                for (size_t od = 0; od < output_dims::d; ++od) {
+                    if(connections(od, id)) {
                         for (size_t wy = 0; wy < weights_dims::h; ++wy) {
                             for (size_t wx = 0; wx < weights_dims::w; ++wx) {
                                 float_t delta = 0;
-                                for (size_t oy = 0; oy < output_dims::h; ++oy) {
-                                    for (size_t ox = 0; ox < output_dims::w; ++ox) {
-                                        auto poy = oy * kernel_params::s_h + wy;
-                                        auto pox = ox * kernel_params::s_w + wx;                                        
-                                        auto po = prev_out(si, id, poy, pox);                                        
-                                        auto cd = curr_delta(si, od, oy, ox);
-                                        delta +=  po * cd;                                                                                
+                                for (size_t oy = 0, iny = 0; oy < output_dims::h; ++oy, iny += kernel_params::s_h) {
+                                    for (size_t ox = 0, inx = 0; ox < output_dims::w; ++ox, inx += kernel_params::s_w) {
+                                        auto& po = prev_out(si, id, oy + wy, ox + wx);
+                                        auto& cd = curr_delta(si, od, oy, ox);
+                                        delta +=  po * cd;
                                     }
                                 }
-                                dw(si, id, od, wy, wx) += delta;
+                                dw(si, od, id, wy, wx) += delta;
                             }
                         }
                     }
@@ -306,29 +257,21 @@ struct conv_layer : layer<
 
     /**
      * \brief Weights of the layer.
-     *
-     * Size is (D_out, D_in, H_kernel, W_Kernel)
      */
     weights_type w;
 
     /**
      * Weights Delta
-     *
-     * Size is (Sample, D_Out, D_in, H_kernel, W_Kernel)
      */
     weights_delta_type dw;
 
     /**
      * \brief Bias.
-     *
-     * Size is (D_out)
      */
     bias_type b;
 
     /**
      * Bias Delta.
-     *
-     * Size is (Sample, D_out)
      */
     bias_delta_type db;
 

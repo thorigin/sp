@@ -12,12 +12,15 @@
 #include <tuple>
 #include <array>
 #include <fstream>
+#include <iosfwd>
 #include <experimental/filesystem>
 
+#include "sp/util/timing.hpp"
 
 #include "sp/util/for_each.hpp"
 #include "sp/util/tuples.hpp"
 #include "sp/util/hints.hpp"
+#include "sp/util/typename.hpp"
 
 #include "sp/config.hpp"
 #include "matrix.hpp"
@@ -25,16 +28,17 @@
 #include "optimizer.hpp"
 #include "types.hpp"
 #include "normalize.hpp"
+#include "weight.hpp"
 
 
 SP_ALGO_NN_NAMESPACE_BEGIN
 
 /**
- * \file Definitions of network composite structure and common typedefs
+ * \file Definition of network composite structure
  */
 
 /**
- * Test result 
+ * \brief Test result (alias, tuple)
  */
 using test_results = std::tuple<
     size_t,
@@ -49,82 +53,6 @@ using test_results = std::tuple<
 >;
 
 /**
- * \brief Training
- */
-template<
-    size_t BatchSize = 16,
-    size_t Epochs = 1,
-    typename Optimizer = ada_gradient_optimizer<>,
-    typename LossFunction = mean_square_error
->
-struct training {
-
-    /**
-     * Optimizer type
-     */
-    using optimizer_type = Optimizer;
-
-    /**
-     * Loss function type
-     */
-    using loss_function_type = LossFunction;
-
-    /**
-     * Batch size
-     */
-    constexpr static size_t batch_size = BatchSize;
-
-    static_assert(BatchSize > 0, "BatchSize is greater or equal to 1");
-
-    /**
-     * Number of training epochs
-     */
-    constexpr static size_t epochs = Epochs;
-
-    template<typename Network>
-    sp_hot void operator()(Network& network, sample_vector_type& samples, class_vector_type& classes) {
-
-        BOOST_ASSERT_MSG(!samples.empty(), "Inputs is not empty");
-        BOOST_ASSERT_MSG(samples.size() == classes.size(), "Inputs and classes size mismatch");
-
-        const size_t input_count = samples.size();
-        const size_t batch_count = input_count / batch_size;
-
-        std::vector<input_type>  inputs           = normalize(network, batch_size, samples);
-        std::vector<output_type> expected_outputs = normalize(network, batch_size, classes);        
-        
-        for(size_t i = 0; i < epochs; ++i) {
-            for(size_t b = 0; b < batch_count; ++b) {
-                (*this)(network, inputs[b], expected_outputs[b]);
-            }
-        }
-    }
-
-    /**
-     * \brief Perform a single training operation
-     */
-    template<typename Network>
-    sp_hot void operator()(Network& network, input_type& input, output_type& expected_output) {
-        output_type& actual = network.forward(input);
-        auto grad = gradient(loss, expected_output, actual);
-        network.backward(grad);
-        network.template update_weights(optimizer);
-    }
-
-    optimizer_type optimizer;
-    loss_function_type loss;
-};
-
-/**
- * \brief Calculate the the gradient of the expected vs actual output
- */
-template<typename LossFunction>
-auto gradient(LossFunction& loss, output_type& expected, output_type& actual) {
-    //BOOST_ASSERT(expected.dimensions() == actual.dimensions());
-    return loss.derivative(expected, actual);
-}
-
-/**
  * \brief Generic Neural Network composite structure
  */
 template<typename ... Layers>
@@ -133,43 +61,79 @@ struct network {
     using layers_type = std::tuple<Layers...>;
     constexpr static size_t layers_count = std::tuple_size_v<layers_type>;
 
+    using input_layer_type = typename std::tuple_element_t<0, layers_type>;
+    using output_layer_type = typename std::tuple_element_t<layers_count-1, layers_type>;
     using input_dims  = typename std::tuple_element_t<0, layers_type>::input_dims;
     using output_dims = typename std::tuple_element_t<layers_count-1, layers_type>::output_dims;
 
-    network() : layers() {}
+    network() : layers() {
+        weight_initializer = glorot_weight_initializer();
+        bias_initializer = glorot_weight_initializer();
+    }
 
-    //static_assert() //assert layer series dimensions
-//
-//    sp_hot void prepare(const size_t& samples) {
-//        util::for_each(layers, [&](auto& layer) {
-//
-//        }
-//    }
-
-    sp_hot output_type& forward(input_type& input) {
-        values[0] = input;
-        /* layers start at 1, 0 is the input */
+    /**
+     * \brief Configure and prepare network for the given batch size and
+     *        optionally reset the weights. Must be called before use. It is
+     *        undefined behavior not to configure network before use.
+     */
+    sp_hot void configure(const size_t& batch_size, bool reset = false) {
         size_t idx = 0;
         util::for_each(layers, [&](auto& layer) {
+            using layer_type = std::decay_t<decltype(layer)>;
+
             /**
-             * Perform forward propatation of layer,
-             * given the inputs and outputs of current layer
+             * Check if layer has weight or biases, then propagate
+             * default network initializers to those, if not explicitly configured
              */
+            if constexpr(detail::has_weight_and_delta_v<layer_type>) {
+                if(!layer.weight_initializer) {
+                    layer.weight_initializer = weight_initializer;
+                };
+            }
+            if constexpr(detail::has_bias_and_delta_v<layer_type>) {
+                if(!layer.bias_initializer) {
+                    layer.bias_initializer = bias_initializer;
+                }
+            }
+
+            /* prepare input and input deltas */
+            detail::prepare_tensor<typename layer_type::input_dims >(batch_size, values[idx]);
+            detail::prepare_tensor<typename layer_type::input_dims>(batch_size, values_delta[idx]);
+
+            layer.configure(batch_size, reset);
+
+//            if constexpr(detail::has_weight_and_delta_v<layer_type>) {
+//                std::cout << "Initialized weights to:\n" << layer.w << "\n\n";
+//            }
+//            if constexpr(detail::has_bias_and_delta_v<layer_type>) {
+//                std::cout << "Initialized biases to:\n" << layer.b << "\n\n";
+//            }
+
+            ++idx;
+        });
+        /* output of network */
+        detail::prepare_tensor<output_dims>  (batch_size, values[layers_count]);
+        detail::prepare_tensor<output_dims>  (batch_size, values_delta[layers_count]);
+    }
+
+    sp_hot tensor_4& forward(tensor_4& input) {
+        values[0] = input;
+        size_t idx = 0;
+        util::for_each(layers, [&](auto& layer) {
+            /* clear output */
+            values[idx+1].setZero();
             layer.forward_prop(values[idx], values[idx+1]);
             ++idx;
         });
-        return values[idx];
+        return values[layers_count];
     }
 
-    sp_hot void backward(current_delta_type& delta) {
+    sp_hot void backward(tensor_4& delta) {
         size_t idx = layers_count;
-
-        /**
-         * Set the current delta of the output layer
-         */
+        /* Set the current delta of the output layer */
         values_delta[layers_count] = delta;
-
         util::for_each(util::reverse(layers), [&](auto& layer) {
+            values_delta[idx-1].setZero();
             layer.backward_prop(
                 values[idx-1], /* previous layer input */
                 values_delta[idx-1], /* previous layer delta */
@@ -177,7 +141,7 @@ struct network {
                 values_delta[idx] /* current delta */
             );
             --idx;
-        });        
+        });
     }
 
     /**
@@ -185,6 +149,7 @@ struct network {
      */
     template<typename Optimizer>
     sp_hot void update_weights(Optimizer& optimizer) {
+        //util::scoped_timer t("update_weights(..)");
         util::for_each(layers, [&](auto& layer) {
             layer.update_weights(optimizer);
         });
@@ -192,67 +157,117 @@ struct network {
 
     /**
      * \brief Perform forward propagation and return index
-     * @param input
-     * @return
+     * @return the maximum index vector of samples
      */
-    size_t forward_max_index(input_type& input) {
-        //auto res = input.argmax();
-        auto res = forward(input);
-        //auto argmax = res.argmax();
-        throw "Not implemented";
-        return 0;
+    std::vector<size_t> forward_max_index(tensor_4& input) {
+        BOOST_ASSERT(input.dimension(0) == 1); // only supported for now
+        const size_t batch_size = input.dimension(0);
+        tensor_4& out = forward(input);
+        std::vector<size_t> res(batch_size);
+        res[0] = std::distance(
+            out.data(),
+            std::max_element(out.data(), out.data()+out.size())
+        );
+        return res;
     }
 
     /**
      * \brief Perform testing on the neural network by performing  forward
      *        propagation on samples and compare with the labels using
-     *        maximum index
-     * @param samples
-     * @param labels
+     *        maximum index. Assumes inputs are normalized.
      */
-    template<typename SamplesContainer, typename LabelsContainer>
-    auto test(SamplesContainer& samples, LabelsContainer& labels) {        
+    auto test(sample_vector_type& samples, class_vector_type& classes) {
+        BOOST_ASSERT(samples.size() > 0);
+        BOOST_ASSERT(classes.size() > 0);
+        BOOST_ASSERT(samples.size() == classes.size());
+
         test_results result;
         const size_t sample_count = samples.size();
+
+        tensor_4 input(1, input_dims::d, input_dims::h, input_dims::w);
+
         for(size_t s = 0; s < sample_count; ++s) {
-            auto predicted = this->forward_max_index(samples[s]);
-            auto actual = labels[s];
+            input.chip(0, 0) = samples[s];
+            auto predicted = this->forward_max_index(input)[0];
+            auto actual = classes[s];
             if(predicted == actual) {
                 std::get<0>(result) += 1;
             }
-            std::get<1>(result) += 1;
             std::get<2>(result)[predicted][actual] += 1;
-
         }
+        std::get<1>(result)= sample_count;
         return result;
     }
 
-    void load(const std::string& file) {        
-        std::fstream fs(file);        
+    /**
+     * Load the network weights from the input stream
+     */
+    void load(std::istream& is) {
+        this->configure(1, true);
         util::for_each(layers, [&](auto& layer) {
-            //layer.load(fs);
-        });
-    }
-
-    void save(const std::string& file) {
-        std::fstream fs(file);
-        util::for_each(layers, [&](auto& layer) {
-            //layer.save(fs);
+            layer.load(is);
         });
     }
 
     /**
-     * \brief Provides a range of the network output, as a tuple of [min,max]
-     * 
-     * @return a tuple of min and max
+     * \brief Load the weights from the file specified
      */
-    valid_range out_range() {
-        return std::get<layers_count-1>(layers).range();
+    void load(const std::string& file) {
+        std::fstream fs(file);
+        load(fs);
     }
 
-    /** \TODO possibly remove, unused */
+    /**
+     * \brief Save the network weights to the output stream
+     * @param os
+     */
+    void save(std::ostream& os) {
+        auto flags = os.flags();
+        os << std::setprecision(std::numeric_limits<float_t>::digits10 + 2);
+        util::for_each(layers, [&](auto& layer) {
+            layer.save(os);
+        });
+        os.flags(flags);
+    }
+
+    void save(const std::string& file) {
+        std::fstream fs(file);
+        save(fs);
+    }
+
+    auto& out_layer() {
+        return std::get<layers_count-1>(layers);
+    }
+
+    auto& in_layer() {
+        return std::get<0>(layers);
+    }
+
+    /**
+     * \brief The output range of the network
+     */
+    valid_range out_range() {
+        return out_layer().range();
+    }
+
+    /**
+     * The input range of the network
+     */
     valid_range in_range() {
-        return std::get<0>(layers).range();
+        return in_layer().range();
+    }
+
+    /**
+     * The target output range of the network, for training purposes
+     * @return
+     */
+    valid_range out_target_range() {
+        return out_layer().target_range();
+    }
+
+    template<size_t Index>
+    std::tuple_element_t<Index, std::tuple<Layers...>>& get() {
+        return std::get<Index>(layers);
     }
 
     //Tuple holds all the layers of this network
@@ -262,11 +277,19 @@ struct network {
      * Store values and values delta of inputs and ouputs
      * + 1 (input layer)
      */
-    std::array<input_type, layers_count + 1> values;
-    std::array<input_type, layers_count + 1> values_delta;
+    std::array<tensor_4, layers_count + 1> values;
+    std::array<tensor_4, layers_count + 1> values_delta;
 
+    /**
+     * \brief Provides a plug-in point for custom weight initialization strategy
+     *
+     * Strategy is passed on to layers if weight and bias initializers have not
+     * been manually initialized
+     */
+    std::function<void(float_t*, float_t*, const size_t&, const size_t&)> weight_initializer;
+    std::function<void(float_t*, float_t*, const size_t&, const size_t&)> bias_initializer;
 };
-    
+
 SP_ALGO_NN_NAMESPACE_END
 
 #endif	/* SP_ALGO_NN_NETWORK_HPP */

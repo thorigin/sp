@@ -11,6 +11,8 @@
 #include <boost/assert.hpp>
 #include "../config.hpp"
 #include "../matrix.hpp"
+#include "../types.hpp"
+#include "sp/util/hints.hpp"
 
 
 SP_ALGO_NN_NAMESPACE_BEGIN
@@ -19,21 +21,19 @@ SP_ALGO_NN_NAMESPACE_BEGIN
  * \brief Mean Square Error Derivative
  */
 struct mean_square_error_derivative {
-    
-    output_type operator()(const output_type &y, const output_type &t) {
-        BOOST_ASSERT(y.dimensions() == t.dimensions());
-        BOOST_ASSERT(y.size() == t.size());
-        
-        output_type d(y.dimensions());
-        const size_t len = t.size();
 
-        float_t factor = float_t(2) / static_cast<float_t> (len);
+    sp_hot void operator()(         const size_t& si,
+                                    const tensor_4& predicted,
+                                    const tensor_4& observed,
+                                    tensor_4& result) {
 
-        for(size_t i = 1, len = y.size(); i < len; ++i) {
-            d.data()[i] += factor * (y.data()[i] - t.data()[i]);
-        }
+        BOOST_ASSERT(predicted.dimensions() == observed.dimensions());
 
-        return d;
+        const size_t m = predicted.dimension(1) * predicted.dimension(2) * predicted.dimension(3);
+
+        float_t factor = float_t(2.0f) / static_cast<float_t> (m);
+
+        result.chip(si, 0) = factor * (predicted.chip(si, 0) - observed.chip(si, 0));
     }
 };
 
@@ -43,17 +43,19 @@ struct mean_square_error_derivative {
 struct mean_square_error {
 
     using derivative_type = mean_square_error_derivative;
-    
-    float_t operator()(const output_type &y, const output_type& t) {
-        BOOST_ASSERT(y.size() == t.size());
 
-        float_t d = 0;
-        const size_t len = y.size();
-        for(size_t i = 1; i < len; ++i) {
-            d += (y.data()[i] - t.data()[i]) * (y.data()[i] - t.data()[i]);
-        }
+    auto operator()(                    const size_t& si,
+                                        const tensor_4& predicted,
+                                        const tensor_4& observed) {
+        BOOST_ASSERT(predicted.dimensions() == observed.dimensions());
 
-        return d / static_cast<float_t> (y.size());
+        tensor_0 d = (
+            (predicted.chip(si, 0) - observed.chip(si, 0))
+                *
+            (predicted.chip(si, 0) - observed.chip(si, 0))
+        ).sum();
+
+        return d(0) / static_cast<float_t> (predicted.size());
     }
 
     derivative_type derivative;

@@ -71,17 +71,17 @@ struct activation_layer : layer<
      */
     using output_dims = typename base::output_dims;
 
-    void forward_prop_impl(input_type& input, output_type& output) {
+    void forward_prop_impl(tensor_4& input, tensor_4& output) {
         detail::activation_op_helper<
             activation_op_type,
             input_dims
         >().fprop(input, output);
     }
 
-    void backward_prop_impl(    previous_output_type& prev_out,
-                                previous_delta_type& prev_delta,
-                                current_type& curr_out,
-                                current_delta_type& curr_delta) {
+    void backward_prop_impl(    tensor_4& prev_out,
+                                tensor_4& prev_delta,
+                                tensor_4& curr_out,
+                                tensor_4& curr_delta) {
         detail::activation_op_helper<
             activation_op_type,
             input_dims
@@ -92,9 +92,9 @@ struct activation_layer : layer<
     valid_range range_impl() {
         return activation_op_type().range();
     }
-    
+
 };
-        
+
 SP_ALGO_NN_NAMESPACE_END
 
 #endif	/* SP_ALGO_NN_LAYER_ACTIVATION_LAYER_HPP */

@@ -6,4 +6,5 @@
  * Written by Omar Thor <omarthoro@gmail.com>, 2017
  */
 
+#include "loss/gradient.hpp"
 #include "loss/mean_square_error.hpp"

@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE( test_sp_util_lookback_running ) {
         hist.tick(i);
     }
 
-    BOOST_REQUIRE_EQUAL(hist.mean(), 2.5f);
+    BOOST_REQUIRE_EQUAL(hist.mean(), 4.13810539f);
 
 }
 

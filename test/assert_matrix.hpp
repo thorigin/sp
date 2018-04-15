@@ -10,6 +10,9 @@
 #define	SP_ALGO_TESTING_ASSERT_MATRIX_HPP
 
 #include <boost/assert.hpp>
+#include <iosfwd>
+#include <iomanip>
+#include <boost/test/unit_test.hpp>
 
 #include "sp/config.hpp"
 #include "sp/algo/nn/matrix.hpp"
@@ -21,7 +24,7 @@
 
 SP_TESTING_NAMESPACE_BEGIN
 
-inline void assert_tensor_equals(const algo::nn::tensor_1& expected, const algo::nn::tensor_1& real, float epsilon = 1e-9) {
+inline void assert_tensor_equals(const algo::nn::tensor_1& expected, const algo::nn::tensor_1& real, float epsilon = 1e-4f) {
     BOOST_REQUIRE_EQUAL(expected.dimension(0), real.dimension(0));
     for(size_t i = 0, len = expected.dimension(2); i < len; ++i) {
         auto expect_val = expected(i);
@@ -30,7 +33,7 @@ inline void assert_tensor_equals(const algo::nn::tensor_1& expected, const algo:
     }
 }
 
-inline void assert_tensor_equals(const algo::nn::tensor_2& expected, const algo::nn::tensor_2& real, float epsilon = 1e-9) {
+inline void assert_tensor_equals(const algo::nn::tensor_2& expected, const algo::nn::tensor_2& real, float epsilon = 1e-4f) {
     BOOST_REQUIRE_EQUAL(expected.dimension(0), real.dimension(0));
     BOOST_REQUIRE_EQUAL(expected.dimension(1), real.dimension(1));
     for(size_t i = 0, i_len = expected.dimension(0); i < i_len; ++i) {
@@ -42,7 +45,7 @@ inline void assert_tensor_equals(const algo::nn::tensor_2& expected, const algo:
     }
 }
 
-inline void assert_tensor_equals(const algo::nn::tensor_3& expected, const algo::nn::tensor_3& real, float epsilon = 1e-9) {
+inline void assert_tensor_equals(const algo::nn::tensor_3& expected, const algo::nn::tensor_3& real, float epsilon = 1e-4f) {
     BOOST_REQUIRE_EQUAL(expected.dimension(0), real.dimension(0));
     BOOST_REQUIRE_EQUAL(expected.dimension(1), real.dimension(1));
     BOOST_REQUIRE_EQUAL(expected.dimension(2), real.dimension(2));
@@ -57,7 +60,7 @@ inline void assert_tensor_equals(const algo::nn::tensor_3& expected, const algo:
     }
 }
 
-inline void assert_tensor_equals(const algo::nn::tensor_4& expected, const algo::nn::tensor_4& real, float epsilon = 1e-9) {
+inline void assert_tensor_equals(const algo::nn::tensor_4& expected, const algo::nn::tensor_4& real, float epsilon = 1e-4f) {
     BOOST_REQUIRE_EQUAL(expected.dimension(0), real.dimension(0));
     BOOST_REQUIRE_EQUAL(expected.dimension(1), real.dimension(1));
     BOOST_REQUIRE_EQUAL(expected.dimension(2), real.dimension(2));
@@ -75,7 +78,7 @@ inline void assert_tensor_equals(const algo::nn::tensor_4& expected, const algo:
     }
 }
 
-inline void assert_tensor_equals(const algo::nn::tensor_5& expected, const algo::nn::tensor_5& real, float epsilon = 1e-9) {
+inline void assert_tensor_equals(const algo::nn::tensor_5& expected, const algo::nn::tensor_5& real, float epsilon = 1e-4f) {
     BOOST_REQUIRE_EQUAL(expected.dimension(0), real.dimension(0));
     BOOST_REQUIRE_EQUAL(expected.dimension(1), real.dimension(1));
     BOOST_REQUIRE_EQUAL(expected.dimension(2), real.dimension(2));
@@ -94,6 +97,27 @@ inline void assert_tensor_equals(const algo::nn::tensor_5& expected, const algo:
             }
         }
     }
+}
+
+inline void pretty_print_tensor(std::ostream& os, const algo::nn::tensor_4& tensor) {
+    auto flags = os.flags();;
+    os << std::setprecision(4) << std::fixed;
+    os << "[\n";
+    for(size_t i = 0, i_len = tensor.dimension(0); i < i_len; ++i) {
+        os << "{\n";
+        for (size_t j = 0, j_len = tensor.dimension(1); j < j_len; ++j) {
+            for(size_t k = 0, k_len = tensor.dimension(2); k < k_len; ++k) {
+                for(size_t s = 0, s_len = tensor.dimension(3); s < s_len; ++s) {
+                    os << std::setw(8) << tensor(i, j, k, s);
+                }
+                os << "\n";
+            }
+            os << "\n";
+        }
+        os << "}\n";
+    }
+    os << "]\n";
+    os.setf(flags);
 }
 
 SP_TESTING_NAMESPACE_END

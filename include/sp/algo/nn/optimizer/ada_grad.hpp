@@ -12,16 +12,9 @@
 #include "../config.hpp"
 #include "optimizer.hpp"
 
+#include <boost/assert.hpp>
+
 SP_ALGO_NN_NAMESPACE_BEGIN
-
-namespace detail {
-    constexpr float_t epsilon = 1e-9;
-}
-
-/**
- * \brief Default learning rate
- */
-using default_learning_rate = std::ratio<1, 100>;
 
 /**
  * \brief Adaptive Gradient Optimizer
@@ -32,21 +25,29 @@ template<typename LearningRate = default_learning_rate>
 struct ada_gradient_optimizer : stateful_optimizer<1, ada_gradient_optimizer<LearningRate>> {
 
     constexpr static float_t alpha = static_cast<float_t>(LearningRate::num) / static_cast<float_t>(LearningRate::den);
+    static_assert(alpha > 0 && alpha < 1.0, "Alpha is in the range of (0, 1;");
 
-    void update_impl(weights_type& dw, weights_type& w) {
+    constexpr static float_t epsilon = 1.0e-8f;
 
-        auto& g = this->state[0][&dw];
+    template<typename Tensor>
+    void update_impl(Tensor& dw, Tensor& w) {
+        tensor_1& g = this->state[0][&dw];
 
-        if(g.dimensions() != w.dimensions()) {
-            g.resize(w.dimensions());
+        auto& dims = w.dimensions();
+
+        /* initialize g size */
+        if(g.size() != w.size()) {
+            g.resize(w.size());
             g.setZero();
         }
 
-        g += dw * dw;
-        weights_type epsilon(1, 1, 1, 1);
-        epsilon.setConstant(detail::epsilon);
+        BOOST_ASSERT(g.size() == w.size());
+        BOOST_ASSERT(g.size() == dw.size());
+        BOOST_ASSERT(dw.size() == w.size());
+        BOOST_ASSERT(dw.dimensions() == w.dimensions());
 
-        w -= alpha * dw / (g + epsilon.broadcast(g.dimensions())).sqrt();
+        g.reshape(dims) += dw.square();
+        w -= (alpha * dw) / (g.reshape(dims).sqrt() + epsilon);
     }
 
 

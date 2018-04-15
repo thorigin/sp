@@ -21,8 +21,8 @@ SP_ALGO_NN_NAMESPACE_BEGIN
  */
 template<
     size_t Depth = 1,
-    size_t Width = 1,
-    size_t Height = 1
+    size_t Height = 1,
+    size_t Width = 1
 >
 struct volume_dims {
 
@@ -30,8 +30,13 @@ struct volume_dims {
      * Validate inputs
      */
     static_assert(Depth > 0,     "Depth must be greater or equal to 1");
-    static_assert(Width > 0,     "Width must be greater or equal to 1");
     static_assert(Height > 0,    "Height must be greater or equal to 1");
+    static_assert(Width > 0,     "Width must be greater or equal to 1");
+
+    /**
+     * Artificial limit to reduce user errors (including overflows)
+     */
+    static_assert(Depth <= 1e15 && Height <= 1e15 && Width <= 1e15, "Depth, Height, and Width must not exceed 10x15");
 
     /**
      * Depth
@@ -39,15 +44,14 @@ struct volume_dims {
     constexpr static size_t d = Depth;
 
     /**
-     * Width
-     */
-    constexpr static size_t w = Width;
-
-    /**
      * Height
      */
     constexpr static size_t h = Height;
 
+    /**
+     * Width
+     */
+    constexpr static size_t w = Width;
 
     /**
      * The total size of the volume
@@ -76,8 +80,8 @@ struct volume_dims {
 template<
     size_t Outputs = 1,
     size_t Inputs = 1,
-    size_t Width = 1,
-    size_t Height = 1
+    size_t Height = 1,
+    size_t Width = 1
 >
 struct weight_dims {
 
@@ -86,8 +90,8 @@ struct weight_dims {
      */
     static_assert(Outputs > 0,   "Outputs must be greater or equal to 1");
     static_assert(Inputs > 0,    "Inputs must be greater or equal to 1");
-    static_assert(Width > 0,     "Width must be greater or equal to 1");
     static_assert(Height > 0,    "Height must be greater or equal to 1");
+    static_assert(Width > 0,     "Width must be greater or equal to 1");
 
     /**
      * Outputs
@@ -100,15 +104,14 @@ struct weight_dims {
     constexpr static size_t in = Inputs;
 
     /**
-     * Width
-     */
-    constexpr static size_t w = Width;
-
-    /**
      * Height
      */
     constexpr static size_t h = Height;
 
+    /**
+     * Width
+     */
+    constexpr static size_t w = Width;
 };
 
 /**
@@ -131,8 +134,8 @@ enum padding_type {
  */
 template<
     size_t Depth = 64,
-    size_t Width = 2,
     size_t Height = 2,
+    size_t Width = 2,
     size_t StrideWidth = 2,
     size_t StrideHeight = 2,
     padding_type PaddingType = padding_type::valid
@@ -146,8 +149,8 @@ struct kernel_params {
     static_assert(StrideHeight > 0,    "StrideHeight must be greater than zero");
 
     constexpr static size_t d = Depth;
-    constexpr static size_t w = Width;
     constexpr static size_t h = Height;
+    constexpr static size_t w = Width;
     constexpr static size_t s_w = StrideWidth;
     constexpr static size_t s_h = StrideHeight;
     constexpr static padding_type padding = PaddingType;
@@ -186,7 +189,7 @@ using pooling_kernel_params = kernel_params<1, Length, Length, Stride, Stride, P
 
 using kernel_params_default = kernel_symmetric_params<>;
 
-        
+
 SP_ALGO_NN_NAMESPACE_END
 
 #endif	/* SP_ALGO_NN_LAYER_PARAMS_HPP */

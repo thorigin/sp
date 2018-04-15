@@ -16,7 +16,11 @@
 SP_ALGO_NN_NAMESPACE_BEGIN
 
 #ifndef NN_FLOAT_TYPE
-#define NN_FLOAT_TYPE float_t
+#define NN_FLOAT_TYPE std::float_t
+#endif
+
+#ifndef SP_ALGO_NN_RANDOM_GENERATOR
+#define SP_ALGO_NN_RANDOM_GENERATOR std::mt19937
 #endif
 
 using float_t = NN_FLOAT_TYPE;

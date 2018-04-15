@@ -6,6 +6,9 @@
  * Written by Omar Thor <omarthoro@gmail.com>, 2017
  */
 
+#ifndef SP_UTIL_ATTRMAP_HPP
+#define	SP_UTIL_ATTRMAP_HPP
+
 #include <unordered_map>
 #include <utility>
 #include <string>
@@ -147,3 +150,5 @@ private:
 };
 
 SP_UTIL_NAMESPACE_END
+
+#endif /* SP_UTIL_ATTRMAP_HPP */

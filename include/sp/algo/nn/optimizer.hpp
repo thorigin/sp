@@ -8,4 +8,5 @@
 
 #include "optimizer/optimizer.hpp"
 #include "optimizer/ada_grad.hpp"
+#include "optimizer/grad_desc.hpp"
 

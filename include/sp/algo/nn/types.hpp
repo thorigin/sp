@@ -44,49 +44,6 @@ using sample_vector_type = std::vector<sample_type>;
 using class_vector_type = std::vector<size_t>;
 
 /**
- * \brief The input tensor type
- */
-using input_type = tensor_4;
-
-/**
- * \brief The output tensor type
- */
-using output_type = tensor_4;
-
-/**
- * The input delta type
- */
-using input_delta_type = tensor_4;
-
-/**
- * \brief The previous output type
- *
- * Size is (Sample, D_in, D_out, H_kernel, W_kernel)
- */
-using previous_output_type = tensor_4;
-
-/**
- * \brief The previous output delta type
- *
- * Size is (Sample, D_in, H_kernel, W_kernel)
- */
-using previous_delta_type = tensor_4;
-
-/**
- * \brief The current output delta type
- *
- * Size is (Sample, D_out, H_kernel, W_kernel)
- */
-using current_delta_type = tensor_4;
-
-/**
- * \brief The current output delta type (output_type)
- *
- * Size is (Sample, D_out, H_kernel, W_kernel)
- */
-using current_type = output_type;
-
-/**
  * \brief The weights type
  *
  * Size is (D_in, D_out, H_kernel, W_kernel)
@@ -109,7 +66,6 @@ using bias_type = tensor_1;
  * \brief The bias delta type
  */
 using bias_delta_type = tensor_2;
-
 
 
 SP_ALGO_NN_NAMESPACE_END
