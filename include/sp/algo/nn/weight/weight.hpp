@@ -106,7 +106,7 @@ struct gauss_weight_initializer : weight_initializer<gauss_weight_initializer>  
  */
 struct fixed_weight_initializer : weight_initializer<fixed_weight_initializer>  {
 
-    fixed_weight_initializer(float_t val = 1.0f) : value(val) {}
+    fixed_weight_initializer(float_t val = 0.0f) : value(val) {}
 
     void impl(float_t* start, float_t* end, const size_t& fan_in, const size_t& fan_out) {
         std::for_each(start, end, [&](float_t& val) {

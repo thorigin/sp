@@ -116,8 +116,17 @@ struct fully_connected_layer : layer<
                     for (size_t iy = 0; iy < input_dims::h; ++iy) {
                         for (size_t ix = 0; ix < input_dims::w; ++ix) {
                             auto& w_i = w(id, iy, ix, od);
-                            auto& p_out = prev_out(si, id, iy, ix);
                             prev_delta(si, id, iy, ix) += grad * w_i;
+                        }
+                    }
+                }
+            }
+            for(size_t od = 0; od < output_dims::size; ++od) {
+                auto& grad = curr_delta(si, od, 0, 0);
+                for (size_t id = 0; id < input_dims::d; ++id) {
+                    for (size_t iy = 0; iy < input_dims::h; ++iy) {
+                        for (size_t ix = 0; ix < input_dims::w; ++ix) {
+                            auto& p_out = prev_out(si, id, iy, ix);
                             dw(si, id, iy, ix, od) += grad * p_out;
                         }
                     }

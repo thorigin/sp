@@ -226,10 +226,16 @@ struct layer {
      */
     void save(std::ostream& os) {
         if constexpr(detail::has_weight_and_delta_v<derived_type>) {
-            os << derived().w;
+            auto& w = derived().w;
+            for(size_t i = 0, len = w.size(); i < len; ++i) {
+                os << w.data()[i] << " ";
+            }
         }
         if constexpr(detail::has_bias_and_delta_v<derived_type>) {
-            os << derived().b;
+            auto& b = derived().b;
+            for(size_t i = 0, len = b.size(); i < len; ++i) {
+                os << b.data()[i] << " ";
+            }
         }
     }
 

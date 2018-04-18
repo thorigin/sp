@@ -25,9 +25,9 @@ int main(int argc, char** argv) {
     using network_def = network<
         fully_connected_layer<
             volume_dims<1, 32, 32>,
-            256
+            64
         >,
-        tanh_layer<volume_dims<256>>,
+        tanh_layer<volume_dims<64>>,
         fully_connected_layer<
             volume_dims<64>,
             64
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
     constexpr size_t batch_size = 15;
 
     const size_t batch_count = train_images.size()/batch_size;
-    training<batch_size, 500, ada_gradient_optimizer<std::ratio<4, 100>>, mean_square_error> trainer;
+    training<batch_size, 50, ada_gradient_optimizer<std::ratio<4, 100>>, mean_square_error> trainer;
 
     util::progress prog(batch_count);
 

@@ -24,13 +24,15 @@ SP_ALGO_NN_NAMESPACE_BEGIN
 template<typename LearningRate = default_learning_rate>
 struct ada_gradient_optimizer : stateful_optimizer<1, ada_gradient_optimizer<LearningRate>> {
 
-    constexpr static float_t alpha = static_cast<float_t>(LearningRate::num) / static_cast<float_t>(LearningRate::den);
-    static_assert(alpha > 0 && alpha < 1.0, "Alpha is in the range of (0, 1;");
+    float_t alpha = static_cast<float_t>(LearningRate::num) / static_cast<float_t>(LearningRate::den);
 
     constexpr static float_t epsilon = 1.0e-8f;
 
     template<typename Tensor>
     void update_impl(Tensor& dw, Tensor& w) {
+
+        BOOST_ASSERT_MSG(alpha > 0 && alpha < 1.0, "Alpha is in the range of (0, 1)");
+
         tensor_1& g = this->state[0][&dw];
 
         auto& dims = w.dimensions();

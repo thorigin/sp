@@ -128,15 +128,6 @@ struct pooling_layer : layer<
 
     using down_sampler_op_type = typename PoolingAlgorithm::op_type;
 
-    pooling_layer() {
-        /**
-         * Default to a fixed weight initializer as network default is not
-         * appropriate for pooling operations
-         */
-        this->weight_initializer = fixed_weight_initializer(1);
-        this->bias_initializer = fixed_weight_initializer(0);
-    }
-
     void forward_prop_impl(tensor_4& input, tensor_4& output) {
         /**
          * Number of samples in the input

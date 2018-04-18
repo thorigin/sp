@@ -53,6 +53,23 @@ bool validate_dimensions(const tensor_4& t) {
 }
 
 /**
+ * \brief Validate that the tensor matched the volume expected. Note that
+ *        it does not consider sample index
+ *
+ * @return true if matching
+ */
+template<typename VolumeDimsExpected>
+bool validate_dimensions(const size_t& batch_size, const tensor_4& t) {
+    static_assert(util::is_instantiation_of_v<VolumeDimsExpected, volume_dims>, "VolumeDimsExpected is an instantiation of volume_dims");
+    using expected = VolumeDimsExpected;
+    auto& dims = t.dimensions();
+    return      static_cast<size_t>(dims[0]) == batch_size &&
+                static_cast<size_t>(dims[1]) == expected::d &&
+                static_cast<size_t>(dims[2]) == expected::h &&
+                static_cast<size_t>(dims[3]) == expected::w;
+}
+
+/**
  * \brief Calculate the padded size of an input when using a kernel
  *
  * Modifies, if necessary, the input dimension

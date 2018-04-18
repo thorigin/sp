@@ -72,7 +72,7 @@ struct training {
     constexpr static size_t epochs = Epochs;
 
     template<typename Network>
-    sp_hot void operator()(Network& network, sample_vector_type& samples, class_vector_type& classes) {
+    sp_hot void operator()(Network& network, sample_vector_type& samples, class_vector_type& classes, bool reset_weights = true) {
 
         BOOST_ASSERT_MSG(!samples.empty(), "Samples is not empty");
         BOOST_ASSERT_MSG(samples.size() == classes.size(), "Samples and classes size match");
@@ -86,7 +86,7 @@ struct training {
 
         std::vector<tensor_4> expected_outputs = prepare_labels(network, batch_size, classes);
 
-        network.configure(batch_size, true);
+        network.configure(batch_size, reset_weights);
 
         cached_gradient.resize(
             batch_size,

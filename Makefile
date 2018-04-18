@@ -18,7 +18,7 @@ TESTS := $(TEST_SRCS:%.cpp=$(BUILD_DIR)/%.bin)
 EXAMPLES_SRCS := $(shell find $(EXAMPLE_SRCS_DIRS) -name *.cpp)
 EXAMPLES := $(EXAMPLES_SRCS:%.cpp=$(BUILD_DIR)/%.bin)
 
-DEPS := $(TESTS:=.d)
+DEPS := $(TESTS:=.d) $(EXAMPLES:=.d)
 
 LDFLAGS := -pthread -lm -lboost_system -lboost_filesystem
 TEST_LDFLAGS := $(LDFLAGS) -lboost_unit_test_framework -DBOOST_TEST_DYN_LINK
@@ -28,7 +28,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 INC_TEST_FLAGS := $(INC_FLAGS)
 
 # Example optimizations
-CPPFLAGS_MODE_EXAMPLES :=  -O3 -flto -march=native -mavx -DNDEBUG
+CPPFLAGS_MODE_EXAMPLES := -O3 -flto -march=native -mavx -DNDEBUG
 # Test flags
 CPPFLAGS_MODE_DEBUG := -g -O0
 
